@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>PWモード選択 | RK Works</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="shared/no-zoom.css">
+</head>
+<body class="select-user-body">
+
+  <div class="select-user-wrap">
+    <img src="icons/icon-192.png" alt="RK Works" class="select-user-logo">
+    <h1 class="select-user-title">現在のPWモードを選択してください</h1>
+    <p class="select-user-sub" id="pw-mode-sub">数か月ごとに切り替わるTMAログインPWに合わせて選んでください</p>
+
+    <div class="select-user-list">
+      <button class="select-user-btn" data-mode="mode1">
+        <span class="select-user-icon"><i class="ti ti-key"></i></span>
+        <span class="select-user-name">PWモード1</span>
+      </button>
+      <button class="select-user-btn" data-mode="mode2">
+        <span class="select-user-icon"><i class="ti ti-key"></i></span>
+        <span class="select-user-name">PWモード2</span>
+      </button>
+    </div>
+  </div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css">
+<script src="shared/user-context.js"></script>
+<script src="shared/pw-config.js"></script>
+<script>
+  (function () {
+    var user = getCurrentUser();
+    if (!user) {
+      window.location.href = "select-user.html";
+      return;
+    }
+    var sub = document.getElementById("pw-mode-sub");
+    if (sub) {
+      sub.textContent = user.label + " として、現在有効なPWモードを選んでください";
+    }
+  })();
+
+  document.querySelectorAll(".select-user-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var mode = btn.getAttribute("data-mode");
+      setCurrentPwMode(mode);
+      window.location.href = "index.html";
+    });
+  });
+</script>
+</body>
+</html>
