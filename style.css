@@ -68,6 +68,10 @@ html, body {
   border-radius: 8px;
 }
 
+.portal-header-text {
+  flex: 1;
+}
+
 .portal-header-text .portal-title {
   font-size: 17px;
   font-weight: 500;
@@ -79,6 +83,24 @@ html, body {
   font-size: 13px;
   color: var(--rk-text-secondary);
   margin: 2px 0 0;
+}
+
+.portal-pw-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--rk-bg-elevated);
+  border: none;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--rk-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.portal-pw-badge i {
+  font-size: 14px;
 }
 
 .portal-grid {
