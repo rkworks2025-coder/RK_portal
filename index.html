@@ -15,6 +15,7 @@
 <meta name="apple-mobile-web-app-title" content="RK Works">
 
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="shared/modal.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css">
 </head>
 <body>
@@ -27,6 +28,10 @@
         <p class="portal-title">業務ポータル</p>
         <p class="portal-sub" id="portal-user-label">アプリを選択してください</p>
       </div>
+      <button type="button" id="pw-mode-badge" class="portal-pw-badge">
+        <i class="ti ti-key" aria-hidden="true"></i>
+        <span id="pw-mode-badge-text">PW1</span>
+      </button>
     </div>
 
     <div class="portal-grid">
@@ -62,7 +67,23 @@
 
   </div>
 
+  <div id="pwModal" class="modal">
+    <div class="dialog">
+      <h3>PWモードの切り替え</h3>
+      <p class="dialog-sub" id="pwModalCurrent">現在: モード1</p>
+      <p class="dialog-msg">切り替え先のモードを選んでください</p>
+      <div class="tma-confirm-actions">
+        <button id="pwModalMode1" class="btn btn-ok">モード1にする</button>
+        <button id="pwModalMode2" class="btn btn-ok">モード2にする</button>
+      </div>
+      <div class="tma-confirm-actions">
+        <button id="pwModalCancel" class="btn">キャンセル</button>
+      </div>
+    </div>
+  </div>
+
 <script src="shared/user-context.js"></script>
+<script src="shared/pw-config.js"></script>
 <script>
   (function () {
     var user = getCurrentUser();
@@ -74,7 +95,48 @@
     if (label) {
       label.textContent = user.label + "として利用中";
     }
+
+    var mode = getCurrentPwMode();
+    if (!mode) {
+      window.location.href = "select-pw-mode.html";
+      return;
+    }
+    updatePwBadge(mode);
   })();
+
+  function updatePwBadge(mode) {
+    var badgeText = document.getElementById("pw-mode-badge-text");
+    if (badgeText) {
+      badgeText.textContent = mode === "mode2" ? "PW2" : "PW1";
+    }
+  }
+
+  var pwModal = document.getElementById("pwModal");
+
+  document.getElementById("pw-mode-badge").addEventListener("click", function () {
+    var current = getCurrentPwMode() || "mode1";
+    var currentText = document.getElementById("pwModalCurrent");
+    if (currentText) {
+      currentText.textContent = "現在: " + (current === "mode2" ? "モード2" : "モード1");
+    }
+    pwModal.classList.add("show");
+  });
+
+  document.getElementById("pwModalCancel").addEventListener("click", function () {
+    pwModal.classList.remove("show");
+  });
+
+  document.getElementById("pwModalMode1").addEventListener("click", function () {
+    setCurrentPwMode("mode1");
+    updatePwBadge("mode1");
+    pwModal.classList.remove("show");
+  });
+
+  document.getElementById("pwModalMode2").addEventListener("click", function () {
+    setCurrentPwMode("mode2");
+    updatePwBadge("mode2");
+    pwModal.classList.remove("show");
+  });
 </script>
 </body>
 </html>
