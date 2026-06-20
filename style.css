@@ -88,14 +88,12 @@ html, body {
 .portal-pw-badge {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   background: var(--rk-bg-elevated);
   border: none;
-  border-radius: 999px;
-  padding: 6px 10px;
+  border-radius: 12px;
+  padding: 6px 12px;
   color: var(--rk-text-secondary);
-  font-size: 12px;
-  font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
@@ -103,6 +101,25 @@ html, body {
 
 .portal-pw-badge i {
   font-size: 14px;
+}
+
+.portal-pw-badge-text-wrap {
+  display: block;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.portal-pw-badge-text-wrap #pw-mode-badge-text {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--rk-text-primary);
+}
+
+.portal-pw-badge-hint {
+  display: block;
+  font-size: 10px;
+  color: var(--rk-text-secondary);
 }
 
 .portal-grid {
