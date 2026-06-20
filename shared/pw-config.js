@@ -60,6 +60,20 @@ function clearCurrentPwMode() {
 }
 
 /**
+ * 指定した担当者・指定したPWモードに対応するPW値を取得する。
+ * 選択画面で「このボタンを押すとどのPWになるか」を事前表示するために使う。
+ *
+ * @param {string} userId - "katayama" または "tojima"
+ * @param {string} mode - "mode1" または "mode2"
+ * @returns {string | null}
+ */
+function getPwValueFor(userId, mode) {
+  const userConfig = RK_PW_CONFIG[userId];
+  if (!userConfig) return null;
+  return userConfig[mode] || null;
+}
+
+/**
  * 現在ログイン中の担当者・現在選択中のPWモードに対応する
  * TMAログイン用パスワードを取得する。
  * shared/user-context.js の getCurrentUser() に依存。
