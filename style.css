@@ -96,6 +96,8 @@ html, body {
   color: var(--rk-text-secondary);
   font-size: 12px;
   font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
   -webkit-tap-highlight-color: transparent;
 }
 
