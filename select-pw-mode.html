@@ -17,11 +17,11 @@
     <div class="select-user-list">
       <button class="select-user-btn" data-mode="mode1">
         <span class="select-user-icon"><i class="ti ti-key"></i></span>
-        <span class="select-user-name">PWモード1</span>
+        <span class="select-user-name" id="pw-label-mode1">--</span>
       </button>
       <button class="select-user-btn" data-mode="mode2">
         <span class="select-user-icon"><i class="ti ti-key"></i></span>
-        <span class="select-user-name">PWモード2</span>
+        <span class="select-user-name" id="pw-label-mode2">--</span>
       </button>
     </div>
   </div>
@@ -38,8 +38,13 @@
     }
     var sub = document.getElementById("pw-mode-sub");
     if (sub) {
-      sub.textContent = user.label + " として、現在有効なPWモードを選んでください";
+      sub.textContent = user.label + " として、現在TMAログイン画面で使われているPWを選んでください";
     }
+
+    var label1 = document.getElementById("pw-label-mode1");
+    var label2 = document.getElementById("pw-label-mode2");
+    if (label1) label1.textContent = getPwValueFor(user.id, "mode1") || "--";
+    if (label2) label2.textContent = getPwValueFor(user.id, "mode2") || "--";
   })();
 
   document.querySelectorAll(".select-user-btn").forEach(function (btn) {
