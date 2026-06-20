@@ -2,9 +2,10 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>担当者選択 | RK Works</title>
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="shared/no-zoom.css">
 </head>
 <body class="select-user-body">
 
@@ -32,7 +33,7 @@
     btn.addEventListener("click", function () {
       var userId = btn.getAttribute("data-user");
       setCurrentUser(userId);
-      window.location.href = "index.html";
+      window.location.href = "select-pw-mode.html";
     });
   });
 </script>
