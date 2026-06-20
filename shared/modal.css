@@ -1,0 +1,101 @@
+/* shared/modal.css
+   巡回アプリで使用しているオリジナルモーダルのデザインを
+   ポータル全体で共通利用するためのスタイル。
+   構造・挙動は巡回アプリ（area.html / style.css）に準拠する。
+
+   使い方:
+     <div id="xxxModal" class="modal">
+       <div class="dialog">
+         <h3>タイトル</h3>
+         <p>本文</p>
+         <div class="tma-confirm-actions">
+           <button class="btn btn-ok">OK</button>
+           <button class="btn">キャンセル</button>
+         </div>
+       </div>
+     </div>
+   表示: document.getElementById("xxxModal").classList.add("show");
+   非表示: classList.remove("show");
+*/
+
+/* モーダル：配置を下部にオフセット（親指が届きやすい位置） */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .65);
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 25vh;
+  z-index: 50;
+}
+.modal.show {
+  display: flex;
+}
+
+.dialog {
+  width: min(480px, 90vw);
+  background: #020617;
+  color: #fff;
+  border-radius: 12px;
+  padding: 16px 14px;
+  border: 1px solid #111827;
+}
+
+.dialog h3 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+}
+
+.dialog .dialog-sub {
+  margin: -5px 0 10px 0;
+  color: var(--rk-text-primary, #e5e7eb);
+  font-size: 15px;
+  font-weight: bold;
+}
+
+.dialog .dialog-msg {
+  margin: 0 0 10px 0;
+  color: var(--rk-text-secondary, #9ca3af);
+  font-size: 14px;
+}
+
+/* ボタン共通 */
+.btn {
+  appearance: none;
+  border: 1px solid #1f2937;
+  background: #020617;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 14px;
+  color: #e5e7eb;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: #0f172a;
+}
+
+/* モーダル内の確認ボタン群（OK/キャンセルを横並びで等幅に） */
+.tma-confirm-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  flex-direction: row;
+}
+.tma-confirm-actions .btn {
+  flex: 1;
+  padding: 12px 0;
+  font-size: 16px;
+}
+.tma-confirm-actions .btn-ok {
+  background: #020617;
+  border: 1px solid #0d9488;
+  color: #2dd4bf;
+}
+.tma-confirm-actions .btn-ok:hover {
+  background: #0f172a;
+  border-color: #14b8a6;
+  color: #5eead4;
+}
