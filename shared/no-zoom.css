@@ -1,0 +1,15 @@
+/* shared/no-zoom.css
+   iOS Safariでの「連続タップによる拡大（ダブルタップズーム）」を防止する。
+   viewportのmaximum-scale指定はiOS Safariが無視する場合があるため、
+   touch-action による制御を併用する。
+
+   全ページの <head> で読み込むこと。
+*/
+
+html {
+  touch-action: manipulation;
+}
+
+body {
+  touch-action: manipulation;
+}
