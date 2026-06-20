@@ -143,19 +143,6 @@ html, body {
 .portal-card-badge.badge-jks { color: var(--rk-icon-jks); background: var(--rk-tile-jks); }
 .portal-card-badge.badge-jks2 { color: var(--rk-icon-jks2); background: var(--rk-tile-jks2); }
 
-.portal-footer {
-  padding: 4px 18px 18px;
-  text-align: center;
-}
-
-.portal-footer button {
-  background: none;
-  border: none;
-  color: var(--rk-text-secondary);
-  font-size: 12px;
-  padding: 8px;
-}
-
 /* ---------- 担当者選択画面 ---------- */
 
 .select-user-body {

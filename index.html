@@ -60,10 +60,6 @@
 
     </div>
 
-    <div class="portal-footer">
-      <button type="button" id="switch-user-btn">利用者を切り替える</button>
-    </div>
-
   </div>
 
 <script src="shared/user-context.js"></script>
@@ -79,11 +75,6 @@
       label.textContent = user.label + "として利用中";
     }
   })();
-
-  document.getElementById("switch-user-btn").addEventListener("click", function () {
-    clearCurrentUser();
-    window.location.href = "select-user.html";
-  });
 </script>
 </body>
 </html>
