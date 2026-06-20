@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#15171a">
+<title>RK Works 業務ポータル</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RK Works">
+
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css">
+</head>
+<body>
+
+  <div class="portal-wrap">
+
+    <div class="portal-header">
+      <img src="icons/icon-32.png" alt="RK Works">
+      <div class="portal-header-text">
+        <p class="portal-title">業務ポータル</p>
+        <p class="portal-sub" id="portal-user-label">アプリを選択してください</p>
+      </div>
+    </div>
+
+    <div class="portal-grid">
+
+      <a href="./junkai/" class="portal-card">
+        <span class="portal-card-icon icon-junkai"><i class="ti ti-map-pin" aria-hidden="true"></i></span>
+        <span class="portal-card-label">巡回</span>
+      </a>
+
+      <a href="./yoyaku/" class="portal-card">
+        <span class="portal-card-icon icon-yoyaku"><i class="ti ti-calendar-stats" aria-hidden="true"></i></span>
+        <span class="portal-card-label">予約表示</span>
+      </a>
+
+      <a href="./jks/" class="portal-card">
+        <span class="portal-card-badge badge-jks">List</span>
+        <span class="portal-card-icon icon-jks"><i class="ti ti-list-details" aria-hidden="true"></i></span>
+        <span class="portal-card-label">JKS</span>
+      </a>
+
+      <a href="./jks2/" class="portal-card">
+        <span class="portal-card-badge badge-jks2">Map</span>
+        <span class="portal-card-icon icon-jks2"><i class="ti ti-map-2" aria-hidden="true"></i></span>
+        <span class="portal-card-label">JKS II</span>
+      </a>
+
+      <a href="./jisseki/" class="portal-card">
+        <span class="portal-card-icon icon-jisseki"><i class="ti ti-report" aria-hidden="true"></i></span>
+        <span class="portal-card-label">作業実績</span>
+      </a>
+
+    </div>
+
+    <div class="portal-footer">
+      <button type="button" id="switch-user-btn">利用者を切り替える</button>
+    </div>
+
+  </div>
+
+<script src="shared/user-context.js"></script>
+<script>
+  (function () {
+    var user = getCurrentUser();
+    if (!user) {
+      window.location.href = "select-user.html";
+      return;
+    }
+    var label = document.getElementById("portal-user-label");
+    if (label) {
+      label.textContent = user.label + "として利用中";
+    }
+  })();
+
+  document.getElementById("switch-user-btn").addEventListener("click", function () {
+    clearCurrentUser();
+    window.location.href = "select-user.html";
+  });
+</script>
+</body>
+</html>

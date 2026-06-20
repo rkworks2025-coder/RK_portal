@@ -1,0 +1,235 @@
+/* style.css
+   RK Works 業務ポータル 共通スタイル
+   ベースはダークモード。文字色は「暗くなりがちな問題」を避けるため
+   純黒(#000)・純白(#fff)ではなく、目に優しいトーンで統一する。
+*/
+
+:root {
+  --rk-bg: #15171a;
+  --rk-bg-elevated: #1f2125;
+  --rk-bg-header-border: rgba(255, 255, 255, 0.08);
+
+  --rk-text-primary: #f5f5f4;
+  --rk-text-secondary: #9a9a96;
+
+  --rk-radius-card: 14px;
+  --rk-radius-outer: 20px;
+
+  /* アプリごとのアクセントカラー（背景タイル用・薄め） */
+  --rk-tile-junkai: rgba(186, 117, 23, 0.16);
+  --rk-icon-junkai: #fac775;
+
+  --rk-tile-yoyaku: rgba(55, 138, 221, 0.16);
+  --rk-icon-yoyaku: #85b7eb;
+
+  --rk-tile-jisseki: rgba(216, 90, 48, 0.16);
+  --rk-icon-jisseki: #f0997b;
+
+  --rk-tile-jks: rgba(127, 119, 221, 0.16);
+  --rk-icon-jks: #afa9ec;
+
+  --rk-tile-jks2: rgba(212, 83, 126, 0.16);
+  --rk-icon-jks2: #ed93b1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--rk-bg);
+  color: var(--rk-text-primary);
+  font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- ポータル index ---------- */
+
+.portal-wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+}
+
+.portal-header {
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 18px 14px;
+  border-bottom: 0.5px solid var(--rk-bg-header-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.portal-header img {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.portal-header-text .portal-title {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--rk-text-primary);
+  margin: 0;
+}
+
+.portal-header-text .portal-sub {
+  font-size: 13px;
+  color: var(--rk-text-secondary);
+  margin: 2px 0 0;
+}
+
+.portal-grid {
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.portal-card {
+  background: var(--rk-bg-elevated);
+  border-radius: var(--rk-radius-card);
+  padding: 18px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--rk-text-primary);
+  border: none;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease;
+}
+
+.portal-card:active {
+  transform: scale(0.97);
+}
+
+.portal-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+
+.portal-card-icon.icon-junkai { background: var(--rk-tile-junkai); color: var(--rk-icon-junkai); }
+.portal-card-icon.icon-yoyaku { background: var(--rk-tile-yoyaku); color: var(--rk-icon-yoyaku); }
+.portal-card-icon.icon-jisseki { background: var(--rk-tile-jisseki); color: var(--rk-icon-jisseki); }
+.portal-card-icon.icon-jks { background: var(--rk-tile-jks); color: var(--rk-icon-jks); }
+.portal-card-icon.icon-jks2 { background: var(--rk-tile-jks2); color: var(--rk-icon-jks2); }
+
+.portal-card-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--rk-text-primary);
+}
+
+.portal-card-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.portal-card-badge.badge-jks { color: var(--rk-icon-jks); background: var(--rk-tile-jks); }
+.portal-card-badge.badge-jks2 { color: var(--rk-icon-jks2); background: var(--rk-tile-jks2); }
+
+.portal-footer {
+  padding: 4px 18px 18px;
+  text-align: center;
+}
+
+.portal-footer button {
+  background: none;
+  border: none;
+  color: var(--rk-text-secondary);
+  font-size: 12px;
+  padding: 8px;
+}
+
+/* ---------- 担当者選択画面 ---------- */
+
+.select-user-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.select-user-wrap {
+  width: 100%;
+  max-width: 360px;
+  padding: 24px;
+  text-align: center;
+}
+
+.select-user-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+
+.select-user-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--rk-text-primary);
+  margin: 0 0 6px;
+}
+
+.select-user-sub {
+  font-size: 13px;
+  color: var(--rk-text-secondary);
+  margin: 0 0 28px;
+}
+
+.select-user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.select-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--rk-bg-elevated);
+  border: none;
+  border-radius: var(--rk-radius-card);
+  padding: 18px 20px;
+  color: var(--rk-text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease;
+}
+
+.select-user-btn:active {
+  transform: scale(0.97);
+}
+
+.select-user-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  color: var(--rk-text-primary);
+}
+
+.select-user-name {
+  flex: 1;
+  text-align: left;
+}
