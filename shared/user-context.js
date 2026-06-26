@@ -36,6 +36,11 @@ function getCurrentUser() {
 
 /**
  * 担当者を保存する。
+ * 担当者が切り替わる場合（前回と異なるidがセットされる場合）は、
+ * 各アプリがlocalStorageに保存しているエリア選択・表示モード等が
+ * 前の担当者の値のまま引き継がれてしまうのを防ぐため、
+ * 担当者情報以外のlocalStorageを全消去してから新しい担当者を保存する。
+ * （このオリジン＝RK_portal以外のlocalStorageには影響しない）
  * @param {string} userId - "katayama" または "tojima"
  */
 function setCurrentUser(userId) {
@@ -44,6 +49,14 @@ function setCurrentUser(userId) {
     console.error("不明な担当者ID:", userId);
     return;
   }
+
+  const previousUser = getCurrentUser();
+  const isUserChanged = !previousUser || previousUser.id !== user.id;
+
+  if (isUserChanged) {
+    localStorage.clear();
+  }
+
   localStorage.setItem(RK_USER_STORAGE_KEY, JSON.stringify(user));
 }
 
