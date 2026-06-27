@@ -2,13 +2,60 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>jks2 | RK Works</title>
-<link rel="stylesheet" href="../style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#070b12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="JKS-II">
+<title>JKS-II</title>
+<link rel="stylesheet" href="../shared/no-zoom.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
-<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;">
-  <p style="color:var(--rk-text-secondary);font-size:14px;">この画面は仮のプレースホルダーです</p>
-  <h1 style="font-size:20px;font-weight:500;">jks2</h1>
-  <a href="../index.html" style="color:var(--rk-text-secondary);font-size:14px;">← ポータルに戻る</a>
+<body>
+
+<header>
+  <div class="header-title">JKS-II</div>
+  <div class="area-tabs">
+    <button class="area-tab active" data-area="tama" onclick="switchArea('tama')">多摩</button>
+    <button class="area-tab" data-area="fuchu" onclick="switchArea('fuchu')">府中</button>
+  </div>
+  <button id="updateBtn" class="update-btn" onclick="triggerUpdate()">更新</button>
+  <button id="scanBtn" class="scan-btn" onclick="triggerScan()">スキャン</button>
+</header>
+
+<div class="subbar">
+  <span class="subbar-label">スキャンモード:</span>
+  <button class="mode-btn active" data-mode="normal" onclick="switchScanMode('normal')">ノーマル</button>
+  <button class="mode-btn" data-mode="cluster" onclick="switchScanMode('cluster')">クラスター</button>
+</div>
+
+<div id="gmap"></div>
+
+<div id="loadingOverlay">
+  <div class="loading-text">LOADING...</div>
+  <div class="loading-sub">データを取得中</div>
+</div>
+
+<div id="gps-note">※ 黄色点滅はおおよその位置です</div>
+
+<div class="overlay" id="overlay" onclick="closeDetail()"></div>
+
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-handle"></div>
+  <button class="detail-nav" id="navBtn" onclick="openNav()">▶ ナビ</button>
+  <div class="detail-station" id="detailStation">—</div>
+  <div class="detail-cd" id="detailCd">—</div>
+  <div class="detail-vehicles" id="detailVehicles"></div>
+</div>
+
+<div id="jks2-toast"></div>
+
+<script src="../shared/user-context.js"></script>
+<script src="../shared/ss-config.js"></script>
+<script src="app.js?v=4"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyASRe3WrsFxd7Gw7jjCXc1vajYqF8llK_k&callback=initMap" async defer></script>
 </body>
 </html>
