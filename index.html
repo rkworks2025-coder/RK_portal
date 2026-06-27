@@ -45,7 +45,7 @@
         <span class="portal-card-label">巡回</span>
       </a>
 
-      <a href="./yoyaku/" class="portal-card">
+      <a href="./yoyaku/" id="card-yoyaku" class="portal-card">
         <span class="portal-card-icon icon-yoyaku"><i class="ti ti-calendar-stats" aria-hidden="true"></i></span>
         <span class="portal-card-label">予約表示</span>
       </a>
@@ -100,11 +100,16 @@
       label.textContent = user.label + "として利用中";
     }
 
-    // JKSは片山用・戸島用でフォルダが分かれているため、
+    // JKS・予約表示は片山用・戸島用でフォルダが分かれているため、
     // 担当者IDに応じてカードのリンク先を切り替える。
     var jksCard = document.getElementById("card-jks");
     if (jksCard && user.id === "tojima") {
       jksCard.setAttribute("href", "./jks/tjm/");
+    }
+
+    var yoyakuCard = document.getElementById("card-yoyaku");
+    if (yoyakuCard && user.id === "tojima") {
+      yoyakuCard.setAttribute("href", "./yoyaku/tjm/");
     }
 
     var mode = getCurrentPwMode();
