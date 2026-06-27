@@ -224,27 +224,19 @@
 
   function showKeypad(target){
     keypad.classList.add('show');
-    keypad.style.pointerEvents = 'auto';
-    mainWrap.style.pointerEvents = 'none';
-
-    // bottom:0 を基準にした固定配置は、iOSの一部バージョンで
-    // 実際の表示位置と当たり判定の基準点がズレることがあるため、
-    // window.innerHeight から計算した px 値を直接 top に設定する。
-    const kbHeight = 215;
-    keypad.style.top = (window.innerHeight - kbHeight) + 'px';
     
     const currentRow = target.closest('.tire-row, .std-row') || target.parentElement;
     if(!currentRow) return;
     const vv = window.visualViewport;
     const vh = vv ? vv.height : window.innerHeight;
     const kbRect = keypad.getBoundingClientRect();
-    const kbActualHeight = kbRect.height;
+    const kbHeight = kbRect.height;
 
     const rect = currentRow.getBoundingClientRect(); 
     const currentMatrix = new WebKitCSSMatrix(getComputedStyle(mainWrap).transform);
     const currentY = currentMatrix.m42;
     const naturalBottom = rect.bottom - currentY;
-    const threshold = vh - kbActualHeight;
+    const threshold = vh - kbHeight;
     if(naturalBottom > threshold){
       const shift = naturalBottom - threshold + 20;
       mainWrap.style.transform = `translateY(-${shift}px)`;
@@ -257,9 +249,6 @@
 
   function hideKeypad(){
     keypad.classList.remove('show');
-    keypad.style.pointerEvents = 'none';
-    keypad.style.top = '100vh';
-    mainWrap.style.pointerEvents = 'auto';
     if (currentFocusInput) currentFocusInput.blur();
     currentFocusInput = null;
     lastRowElement = null;
@@ -283,29 +272,24 @@
   }
 
   function setupCustomKeypad(){
-    // 座標からの逆算（document.elementFromPoint等）はiOSのバージョンによって
-    // ビューポートの座標系がズレることがあるため使わず、
-    // 各ボタンに直接リスナーを貼ってボタン自身に処理させる。
-    keypad.querySelectorAll('.key').forEach(btn => {
-      btn.addEventListener('touchstart', e => {
-        if(!audioCtx) {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          if(AudioContext) audioCtx = new AudioContext();
-        }
-        if(!currentFocusInput) return;
-        e.preventDefault();
-        e.stopPropagation();
-        playClickSound();
-        const val = btn.getAttribute('data-val');
-        if(val === 'bs') currentFocusInput.value = currentFocusInput.value.slice(0, -1);
-        else if(val !== null) currentFocusInput.value += val;
-        else if(btn.id === 'keyClose') {
-          hideKeypad();
-          return;
-        }
-        currentFocusInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }, {passive: false});
-    });
+    keypad.addEventListener('touchstart', e => {
+      if(!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if(AudioContext) audioCtx = new AudioContext();
+      }
+      const btn = e.target.closest('.key');
+      if(!btn || !currentFocusInput) return;
+      e.preventDefault();
+      playClickSound();
+      const val = btn.getAttribute('data-val');
+      if(val === 'bs') currentFocusInput.value = currentFocusInput.value.slice(0, -1);
+      else if(val !== null) currentFocusInput.value += val;
+      else if(btn.id === 'keyClose') {
+        hideKeypad();
+        return;
+      }
+      currentFocusInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }, {passive: false});
     document.getElementById('keyClose').addEventListener('click', hideKeypad);
     
     document.addEventListener('touchstart', e => {
@@ -341,10 +325,34 @@
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   };
 
+  function setupViewportFix(){
+    // iOS 26 Safari/PWAの既知バグ対策：
+    // ソフトウェアキーボードを一度開いて閉じた後、
+    // visualViewport.offsetTop が 0 に戻らない、または
+    // visualViewport.height が window.innerHeight と一致しないまま
+    // 残ってしまうことがあり、position:fixed要素(カスタムテンキー)の
+    // 表示位置と実際の当たり判定がズレる原因になる。
+    // resize時・フォーカス移動時にズレを検知し、再計算を促す。
+    const vv = window.visualViewport;
+    if(!vv) return;
+    const correctViewport = () => {
+      const heightDiff = Math.abs(window.innerHeight - vv.height);
+      if(vv.offsetTop !== 0 || heightDiff > 2){
+        window.scrollBy(0, -1);
+        window.scrollBy(0, 1);
+      }
+    };
+    vv.addEventListener('resize', correctViewport);
+    document.addEventListener('focusout', () => {
+      setTimeout(correctViewport, 50);
+      setTimeout(correctViewport, 300);
+    }, true);
+  }
+
   function init(){
     // 担当者が未選択ならポータルの選択画面へ戻す（RK_portal統合対応）
     if (typeof requireUser === "function" && !requireUser("../select-user.html")) return;
-    applyUrl(); showPrevPlaceholders(); fetchSheetData(); wire(); setupAutoAdvance(); setupCustomKeypad();
+    applyUrl(); showPrevPlaceholders(); fetchSheetData(); wire(); setupAutoAdvance(); setupCustomKeypad(); setupViewportFix();
     preloadWorkSplash(); 
     if(form){
       form.addEventListener('submit', async ev => {
