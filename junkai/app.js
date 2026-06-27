@@ -725,17 +725,20 @@ var Junkai = (() => {
             location.href = `${WORK_APP_URL}?${params.toString()}`;
           }
         });
-        const tireBtn = document.createElement("button"); tireBtn.className = "tire-btn"; tireBtn.textContent = "点検";
+        // iOS PWA(standalone)では window.open() を呼んでも別タブ(Safari)にならず
+        // 同じstandaloneウィンドウ内で遷移してしまうため、確実に別タブで開くには
+        // <a target="_blank"> をユーザーが直接タップする形にする必要がある。
+        const tireParams = new URLSearchParams({ station: rec.station || "", model: rec.model || "", plate_full: rec.plate || "" });
+        const tireBtn = document.createElement("a"); tireBtn.className = "tire-btn"; tireBtn.textContent = "点検";
+        tireBtn.href = `${TIRE_APP_URL}?${tireParams.toString()}`;
+        tireBtn.target = "_blank";
+        tireBtn.rel = "noopener";
         tireBtn.dataset.tirePlate = rec.plate || "";
         tireBtn.addEventListener("click", () => {
           // JKS-II経由の場合のlocalStorageをクリア（ループ防止）
           localStorage.removeItem('junkai:auto_tire_plate');
           localStorage.removeItem('junkai:auto_tire_station');
           localStorage.removeItem('junkai:auto_tire_model');
-          const params = new URLSearchParams({ station: rec.station || "", model: rec.model || "", plate_full: rec.plate || "" });
-          // iOS26.5のPWA(standalone)でカスタムテンキーの座標がズレる既知不具合を
-          // 回避するため、タイヤ点検アプリは同一画面遷移ではなく別タブ(Safari相当)で開く
-          window.open(`${TIRE_APP_URL}?${params.toString()}`, '_blank');
         });
         btnGroup.appendChild(tmaBtn); btnGroup.appendChild(tireBtn);
         right.appendChild(sel); right.appendChild(btnGroup);
