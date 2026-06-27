@@ -733,7 +733,9 @@ var Junkai = (() => {
           localStorage.removeItem('junkai:auto_tire_station');
           localStorage.removeItem('junkai:auto_tire_model');
           const params = new URLSearchParams({ station: rec.station || "", model: rec.model || "", plate_full: rec.plate || "" });
-          location.href = `${TIRE_APP_URL}?${params.toString()}`;
+          // iOS26.5のPWA(standalone)でカスタムテンキーの座標がズレる既知不具合を
+          // 回避するため、タイヤ点検アプリは同一画面遷移ではなく別タブ(Safari相当)で開く
+          window.open(`${TIRE_APP_URL}?${params.toString()}`, '_blank');
         });
         btnGroup.appendChild(tmaBtn); btnGroup.appendChild(tireBtn);
         right.appendChild(sel); right.appendChild(btnGroup);
