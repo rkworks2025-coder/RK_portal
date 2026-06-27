@@ -76,12 +76,17 @@ input:focus { border-color: var(--brand); outline: none; background: #1a1a1a; }
   width: 75%;
   height: 100%;
   background: var(--kb-bg);
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(4, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 6px;
   padding: 6px;
   border-top: 1px solid #444;
+}
+.key-row {
+  display: flex;
+  flex: 1 1 0;
+  gap: 6px;
+  min-height: 0;
 }
 .key {
   appearance: none;
@@ -91,6 +96,7 @@ input:focus { border-color: var(--brand); outline: none; background: #1a1a1a; }
   font-size: 22px;
   font-weight: bold;
   display: flex;
+  flex: 1 1 0;
   justify-content: center;
   align-items: center;
   touch-action: manipulation;
