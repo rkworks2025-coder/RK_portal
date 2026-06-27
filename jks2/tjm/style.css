@@ -1,0 +1,182 @@
+:root {
+  --bg: #070b12;
+  --bg2: #0d1520;
+  --accent: #00e5a0;
+  --accent2: #3d9bff;
+  --checked: #ff4d8d;
+  --sevenday: #3d9bff;
+  --stopped: #445060;
+  --text-primary: #e8f4ff;
+  --text-dim: #e8f4ff;
+  --text-bright: #ffffff;
+  --header-h: 52px;
+  --subbar-h: 30px;
+  --topbar-h: 82px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); font-family: 'Noto Sans JP', sans-serif; }
+
+header {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  background: rgba(7,11,18,0.97);
+  border-bottom: 1px solid #1a2d40;
+  display: flex; align-items: center;
+  padding: 0 10px; gap: 6px;
+  z-index: 1000; flex-wrap: nowrap; overflow: hidden;
+}
+.header-title {
+  font-size: 13px; font-weight: bold; color: var(--accent);
+  letter-spacing: 0.12em; flex-shrink: 0;
+}
+.area-tabs { display: flex; gap: 3px; margin-left: 6px; flex-shrink: 0; }
+.area-tab {
+  padding: 3px 7px; font-size: 10px;
+  border: 1px solid #2a3d52; color: var(--text-dim);
+  background: transparent; border-radius: 4px; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.area-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,0.08); }
+
+.update-btn {
+  margin-left: 4px; padding: 4px 8px; font-size: 11px;
+  font-family: 'Courier New', monospace;
+  border: 1px solid var(--accent); color: var(--accent);
+  background: transparent; border-radius: 4px; cursor: pointer;
+  letter-spacing: 0.08em; flex-shrink: 0; transition: all 0.15s;
+}
+.update-btn:disabled { border-color: var(--text-dim); color: var(--text-dim); cursor: default; }
+
+.scan-btn {
+  margin-left: 6px; padding: 4px 10px; font-size: 11px;
+  font-family: 'Courier New', monospace;
+  border: 1px solid #ff4d4d; color: #ff4d4d;
+  background: transparent; border-radius: 4px; cursor: pointer;
+  letter-spacing: 0.08em; flex-shrink: 0; transition: all 0.15s;
+}
+.scan-btn:disabled { border-color: var(--text-dim); color: var(--text-dim); cursor: default; }
+.scan-btn.scanning { border-color: #ffaa00; color: #ffaa00; }
+
+.subbar {
+  position: fixed; top: var(--header-h); left: 0; right: 0;
+  height: var(--subbar-h);
+  background: rgba(10,16,26,0.97); border-bottom: 1px solid #1a2d40;
+  display: flex; align-items: center; padding: 0 12px; gap: 8px; z-index: 999;
+}
+.subbar-label { font-size: 10px; color: var(--text-dim); opacity: 0.6; flex-shrink: 0; }
+.mode-btn {
+  padding: 2px 10px; font-size: 10px;
+  border: 1px solid #2a3d52; color: var(--text-dim);
+  background: transparent; border-radius: 10px; cursor: pointer; transition: all 0.15s;
+}
+.mode-btn.active { border-color: var(--accent2); color: var(--accent2); background: rgba(61,155,255,0.1); }
+
+/* Google Map */
+#gmap {
+  position: fixed !important;
+  top: var(--topbar-h) !important;
+  bottom: 0 !important; left: 0 !important; right: 0 !important;
+  width: 100% !important;
+  height: calc(100% - var(--topbar-h)) !important;
+}
+
+/* ローディング */
+#loadingOverlay {
+  position: fixed; inset: 0;
+  background: rgba(7,11,18,0.98);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 500;
+}
+.loading-text { color: var(--accent); font-family: 'Courier New', monospace; font-size: 14px; letter-spacing: 0.15em; margin-bottom: 12px; }
+.loading-sub { color: var(--text-dim); font-size: 11px; }
+
+/* GPS注意書き */
+#gps-note {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+  background: rgba(7,11,18,0.75); color: rgba(255,224,77,0.8);
+  font-size: 10px; padding: 3px 10px; border-radius: 10px;
+  pointer-events: none; z-index: 200; white-space: nowrap;
+}
+
+/* オーバーレイ */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 140; display: none; }
+.overlay.show { display: block; }
+
+/* 詳細パネル */
+.detail-panel {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg2); border-top: 1px solid #1a2d40;
+  border-radius: 16px 16px 0 0;
+  padding: 12px 16px 24px;
+  max-height: 70vh; overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  z-index: 150;
+}
+.detail-panel.show { transform: translateY(0); }
+.detail-handle { width: 36px; height: 4px; background: #2a3d52; border-radius: 2px; margin: 0 auto 14px; }
+.detail-nav {
+  position: absolute; top: 14px; right: 16px;
+  padding: 4px 12px; font-size: 11px;
+  border: 1px solid var(--accent2); color: var(--accent2);
+  background: rgba(61,155,255,0.08); border-radius: 4px; cursor: pointer;
+}
+.detail-station { font-size: 15px; font-weight: bold; color: var(--text-bright); margin-bottom: 4px; }
+.detail-cd { font-size: 12px; font-family: 'Noto Sans JP', sans-serif; color: var(--text-dim); margin-bottom: 14px; }
+.detail-vehicles { display: flex; flex-direction: column; gap: 12px; }
+
+/* 車両カード */
+.vehicle-card {
+  background: rgba(255,255,255,0.04); border: 1px solid #1a2d40;
+  border-radius: 8px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.vehicle-status { width: 4px; height: 100%; min-height: 40px; border-radius: 2px; flex-shrink: 0; }
+.vehicle-plate { font-size: 13px; font-weight: bold; font-family: 'Noto Sans JP', sans-serif; color: var(--text-bright); }
+.vehicle-model { font-size: 12px; font-family: 'Noto Sans JP', sans-serif; color: var(--text-dim); margin-top: 2px; }
+.vehicle-actions { display: flex; gap: 6px; margin-top: 4px; }
+.btn-small {
+  padding: 4px 12px; font-size: 11px; border-radius: 4px;
+  cursor: pointer; font-family: 'Noto Sans JP', sans-serif; border: 1px solid;
+}
+.btn-tire { border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,0.08); }
+
+/* タイムライン */
+.tl-scroll { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+.tl-full { position: relative; height: 35px; margin-top: 4px; }
+.tl-bar { display: flex; width: 100%; height: 12px; border-radius: 4px; overflow: hidden; background: #222; position: absolute; bottom: 0; z-index: 1; }
+.tl-slot { flex: 1; height: 100%; border-right: 1px solid rgba(0,0,0,0.35); }
+.tl-ok { background: #00bfff; }
+.tl-ng { background: #ff3399; }
+.tl-stopped { background: #888; }
+.tl-label { position: absolute; top: 0; font-size: 10px; color: #fff; transform: translateX(-50%); white-space: nowrap; font-family: 'Courier New', monospace; }
+.tl-date { top: 11px; color: #ffcc00; }
+.tl-grid { position: absolute; bottom: 0; height: 12px; width: 1px; background: #000; z-index: 10; }
+
+/* トースト */
+#jks2-toast {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: rgba(13,21,32,0.97); border: 1px solid var(--accent);
+  color: var(--text-bright); font-size: 14px; line-height: 1.6;
+  padding: 16px 24px; border-radius: 10px; text-align: center;
+  white-space: pre-line; z-index: 600; opacity: 0; pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  box-shadow: 0 0 20px rgba(0,229,160,0.2);
+}
+#jks2-toast.show { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+
+/* スキャンバッジ（マーカー用） */
+.scan-badge-map {
+  background: #e0182d; color: #fff; font-size: 15px; font-weight: bold;
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid #fff; box-shadow: 0 0 6px rgba(224,24,45,0.8);
+}
+
+/* Google Maps InfoWindow上書き */
+.gm-style .gm-style-iw-c { padding: 0 !important; background: transparent !important; box-shadow: none !important; }
+.gm-style .gm-style-iw-d { overflow: hidden !important; }
+.gm-ui-hover-effect { display: none !important; }
+.gm-style .gm-style-iw-tc { display: none !important; }
