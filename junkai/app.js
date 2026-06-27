@@ -88,13 +88,26 @@ var Junkai = (() => {
 
     // 2. タイヤ点検アプリ(同一オリジン版)からの戻り -> 監視タイマーによるTMA自動発火
     const tireCompPlate = localStorage.getItem("junkai:tire_completed_plate");
-    if (!tireCompPlate) return;
-    localStorage.removeItem("junkai:tire_completed_plate");
-    fireTireCompletion(tireCompPlate);
+    if (tireCompPlate) {
+      localStorage.removeItem("junkai:tire_completed_plate");
+      pendingTireCompletionPlate = tireCompPlate;
+    }
+
+    // 3. postMessage経由(TireCheck別オリジン版)で保留中の車両があれば発火
+    if (pendingTireCompletionPlate) {
+      const plate = pendingTireCompletionPlate;
+      pendingTireCompletionPlate = null;
+      fireTireCompletion(plate);
+    }
   }
 
+  // タブがバックグラウンドの間にpostMessageで届いた車両番号を保持する。
+  // (バックグラウンドタブではsetIntervalが間引かれ、リトライが
+  //  時間切れになる前にタブが表に出てこない可能性があるため、
+  //  発火はタブが表示された時(handleReturnActions経由)にのみ行う)
+  let pendingTireCompletionPlate = null;
+
   // タイヤ点検完了後のTMA自動発火本体。
-  // TireCheck(別オリジン)からはpostMessage経由でplateを受け取って直接呼ぶ。
   function fireTireCompletion(tireCompPlate) {
     if (!tireCompPlate) return;
 
@@ -130,12 +143,21 @@ var Junkai = (() => {
 
   // TireCheck(別オリジン)からのpostMessageを受信する。
   // window.openで開いたタブからのメッセージのみを処理対象とする。
+  // ここでは即時にfireTireCompletionを呼ばず、保留しておくだけにする。
+  // (この時点ではTireCheckタブがフォーカスされており、junkaiタブは
+  //  バックグラウンドのため、ここでsetIntervalを始めても完了前に
+  //  タイムアウトする可能性がある)
   window.addEventListener('message', (ev) => {
     if (ev.origin !== 'https://rkworks2025-coder.github.io') return;
     const data = ev.data;
     if (!data || typeof data !== 'object') return;
     if (data.type === 'tire_completed' && data.plate) {
-      fireTireCompletion(data.plate);
+      pendingTireCompletionPlate = data.plate;
+      // タブがすでに表示状態(visible)であれば、ここで即発火してよい
+      if (document.visibilityState === 'visible') {
+        pendingTireCompletionPlate = null;
+        fireTireCompletion(data.plate);
+      }
     }
     if (data.type === 'splash_preloaded' && data.url) {
       // TireCheck側でプリロードしたスプラッシュ画像URLを、
@@ -166,11 +188,11 @@ var Junkai = (() => {
     handleAutoTire();
   });
 
-  // C: ポーリング（500ms）- completed_plateとtire_completed_plateのみ監視（auto_tire_plateは除外）
+  // C: ポーリング（500ms）- completed_plateとtire_completed_plate、postMessage保留分を監視
   setInterval(() => {
     const compPlate = localStorage.getItem('junkai:completed_plate');
     const tireCompPlate = localStorage.getItem('junkai:tire_completed_plate');
-    if (compPlate || tireCompPlate) {
+    if (compPlate || tireCompPlate || pendingTireCompletionPlate) {
       handleReturnActions();
     }
   }, 500);
