@@ -226,19 +226,25 @@
     keypad.classList.add('show');
     keypad.style.pointerEvents = 'auto';
     mainWrap.style.pointerEvents = 'none';
+
+    // bottom:0 を基準にした固定配置は、iOSの一部バージョンで
+    // 実際の表示位置と当たり判定の基準点がズレることがあるため、
+    // window.innerHeight から計算した px 値を直接 top に設定する。
+    const kbHeight = 215;
+    keypad.style.top = (window.innerHeight - kbHeight) + 'px';
     
     const currentRow = target.closest('.tire-row, .std-row') || target.parentElement;
     if(!currentRow) return;
     const vv = window.visualViewport;
     const vh = vv ? vv.height : window.innerHeight;
     const kbRect = keypad.getBoundingClientRect();
-    const kbHeight = kbRect.height;
+    const kbActualHeight = kbRect.height;
 
     const rect = currentRow.getBoundingClientRect(); 
     const currentMatrix = new WebKitCSSMatrix(getComputedStyle(mainWrap).transform);
     const currentY = currentMatrix.m42;
     const naturalBottom = rect.bottom - currentY;
-    const threshold = vh - kbHeight;
+    const threshold = vh - kbActualHeight;
     if(naturalBottom > threshold){
       const shift = naturalBottom - threshold + 20;
       mainWrap.style.transform = `translateY(-${shift}px)`;
@@ -252,6 +258,7 @@
   function hideKeypad(){
     keypad.classList.remove('show');
     keypad.style.pointerEvents = 'none';
+    keypad.style.top = '100vh';
     mainWrap.style.pointerEvents = 'auto';
     if (currentFocusInput) currentFocusInput.blur();
     currentFocusInput = null;
