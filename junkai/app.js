@@ -11,8 +11,11 @@ var Junkai = (() => {
   function getGasUrlSafe() {
     return (typeof getGasUrl === "function" ? getGasUrl("junkai") : null);
   }
-  // タイヤ点検・作業管理アプリは同一リポジトリ内のディレクトリへの相対パスに変更。
-  const TIRE_APP_URL = "../tire/";
+  // タイヤ点検アプリはiOS26.5のPWA(standalone)でカスタムテンキーの
+  // 座標がズレる既知不具合があり、ポータルと同一ドメイン(scope内)では
+  // リンクをタップしてもSafari別タブにならず回避できないため、
+  // 別ドメインのTireCheckリポジトリに分離して運用する。
+  const TIRE_APP_URL = "https://rkworks2025-coder.github.io/TireCheck/";
   const WORK_APP_URL = "../work/";
   const LS_CONFIG_KEY = "junkai:config";
   const TIMEOUT_MS = 15000;
@@ -83,16 +86,21 @@ var Junkai = (() => {
       }
     }
 
-    // 2. タイヤ点検アプリからの戻り -> 監視タイマーによるTMA自動発火
+    // 2. タイヤ点検アプリ(同一オリジン版)からの戻り -> 監視タイマーによるTMA自動発火
     const tireCompPlate = localStorage.getItem("junkai:tire_completed_plate");
+    if (!tireCompPlate) return;
+    localStorage.removeItem("junkai:tire_completed_plate");
+    fireTireCompletion(tireCompPlate);
+  }
+
+  // タイヤ点検完了後のTMA自動発火本体。
+  // TireCheck(別オリジン)からはpostMessage経由でplateを受け取って直接呼ぶ。
+  function fireTireCompletion(tireCompPlate) {
     if (!tireCompPlate) return;
 
     // 作業モードを確認
     const workMode = localStorage.getItem("junkai:work_mode") || "single";
-    if (workMode === "continuous") {
-      localStorage.removeItem("junkai:tire_completed_plate");
-      return;
-    }
+    if (workMode === "continuous") return;
 
     // ボタンが出現するまで最大3秒間(100ms x 30回)監視する
     let retryCount = 0;
@@ -105,8 +113,6 @@ var Junkai = (() => {
           const tmaBtn = row.querySelector('.tma-btn');
           if (tmaBtn && !tmaBtn.disabled) {
             clearInterval(monitorInterval); // 監視終了
-            localStorage.removeItem("junkai:tire_completed_plate"); // 成功確実になってから消去
-            
             tmaBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setTimeout(() => tmaBtn.click(), 400);
             return;
@@ -118,10 +124,26 @@ var Junkai = (() => {
       if (retryCount >= maxRetries) {
         clearInterval(monitorInterval);
         console.warn("TMA auto-fire failed: element not found or hidden by filter.");
-        localStorage.removeItem("junkai:tire_completed_plate"); // タイムアウト時も消去
       }
     }, 100);
   }
+
+  // TireCheck(別オリジン)からのpostMessageを受信する。
+  // window.openで開いたタブからのメッセージのみを処理対象とする。
+  window.addEventListener('message', (ev) => {
+    if (ev.origin !== 'https://rkworks2025-coder.github.io') return;
+    const data = ev.data;
+    if (!data || typeof data !== 'object') return;
+    if (data.type === 'tire_completed' && data.plate) {
+      fireTireCompletion(data.plate);
+    }
+    if (data.type === 'splash_preloaded' && data.url) {
+      // TireCheck側でプリロードしたスプラッシュ画像URLを、
+      // 巡回アプリ自身のlocalStorageに保存する。
+      // (work/作業管理アプリへの遷移時にこの値を使うため)
+      localStorage.setItem("junkai:preloaded_splash_url", data.url);
+    }
+  });
 
   window.addEventListener('pageshow', (e) => {
     if (e.persisted) {
@@ -728,11 +750,15 @@ var Junkai = (() => {
         // iOS PWA(standalone)では window.open() を呼んでも別タブ(Safari)にならず
         // 同じstandaloneウィンドウ内で遷移してしまうため、確実に別タブで開くには
         // <a target="_blank"> をユーザーが直接タップする形にする必要がある。
-        const tireParams = new URLSearchParams({ station: rec.station || "", model: rec.model || "", plate_full: rec.plate || "" });
+        // TireCheckは別ドメインのためポータルのlocalStorage(担当者情報)を
+        // 直接読めないので、operatorパラメータとしてURLに含めて渡す。
+        const tireOperator = (typeof getCurrentUser === "function" && getCurrentUser()) ? getCurrentUser().id : "katayama";
+        const tireParams = new URLSearchParams({ station: rec.station || "", model: rec.model || "", plate_full: rec.plate || "", operator: tireOperator });
         const tireBtn = document.createElement("a"); tireBtn.className = "tire-btn"; tireBtn.textContent = "点検";
         tireBtn.href = `${TIRE_APP_URL}?${tireParams.toString()}`;
         tireBtn.target = "_blank";
-        tireBtn.rel = "noopener";
+        // postMessageでTireCheckからこのタブ(window.opener)へ通知を送る必要があるため
+        // noopenerは付けない(付けるとwindow.openerがnullになり連携できなくなる)
         tireBtn.dataset.tirePlate = rec.plate || "";
         tireBtn.addEventListener("click", () => {
           // JKS-II経由の場合のlocalStorageをクリア（ループ防止）
