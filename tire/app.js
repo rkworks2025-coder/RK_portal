@@ -280,15 +280,22 @@
       const btn = e.target.closest('.key');
       if(!btn || !currentFocusInput) return;
       e.preventDefault();
+      // iOS PWA(standalone)の一部バージョンで、入力欄にフォーカスが
+      // 残った状態だとタップがキーパッドのボタンを素通りして
+      // 背後の要素に届いてしまう不具合が確認されたため、
+      // 値を確定させる前に一旦フォーカスを外す。
+      const targetInput = currentFocusInput;
+      targetInput.blur();
       playClickSound();
       const val = btn.getAttribute('data-val');
-      if(val === 'bs') currentFocusInput.value = currentFocusInput.value.slice(0, -1);
-      else if(val !== null) currentFocusInput.value += val;
+      if(val === 'bs') targetInput.value = targetInput.value.slice(0, -1);
+      else if(val !== null) targetInput.value += val;
       else if(btn.id === 'keyClose') {
         hideKeypad();
         return;
       }
-      currentFocusInput.dispatchEvent(new Event('input', { bubbles: true }));
+      targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+      targetInput.focus({ preventScroll: true });
     }, {passive: false});
     document.getElementById('keyClose').addEventListener('click', hideKeypad);
     
