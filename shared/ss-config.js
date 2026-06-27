@@ -8,6 +8,7 @@
      "tire"     : タイヤ管理メインSS
      "yoyaku"   : 予約管理メインSS
      "jksSystem": JKS_System SS（JKS_II用）
+     "jisseki"  : 作業実績モニタ用（tireと同じSSをCSV参照）
 */
 
 const RK_SS_CONFIG = {
@@ -79,4 +80,15 @@ function getSSConfig(componentKey) {
 function getGasUrl(componentKey) {
   const config = getSSConfig(componentKey);
   return config ? config.gasUrl : null;
+}
+
+/**
+ * 作業実績モニタ用：tireと同じSS IDから、スプレッドシートのCSVエクスポートURLを組み立てる。
+ * @param {string} gid - シートのgid（省略時は0）
+ * @returns {string | null}
+ */
+function getCsvUrl(gid) {
+  const config = getSSConfig("tire");
+  if (!config) return null;
+  return `https://docs.google.com/spreadsheets/d/${config.ssId}/export?format=csv&gid=${gid || 0}`;
 }
