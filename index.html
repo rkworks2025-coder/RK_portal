@@ -56,7 +56,7 @@
         <span class="portal-card-label">JKS</span>
       </a>
 
-      <a href="./jks2/" class="portal-card">
+      <a href="./jks2/" id="card-jks2" class="portal-card">
         <span class="portal-card-badge badge-jks2">Map</span>
         <span class="portal-card-icon icon-jks2"><i class="ti ti-map-2" aria-hidden="true"></i></span>
         <span class="portal-card-label">JKS II</span>
@@ -100,7 +100,7 @@
       label.textContent = user.label + "として利用中";
     }
 
-    // JKS・予約表示は片山用・戸島用でフォルダが分かれているため、
+    // JKS・予約表示・JKS IIは片山用・戸島用でフォルダが分かれているため、
     // 担当者IDに応じてカードのリンク先を切り替える。
     var jksCard = document.getElementById("card-jks");
     if (jksCard && user.id === "tojima") {
@@ -110,6 +110,11 @@
     var yoyakuCard = document.getElementById("card-yoyaku");
     if (yoyakuCard && user.id === "tojima") {
       yoyakuCard.setAttribute("href", "./yoyaku/tjm/");
+    }
+
+    var jks2Card = document.getElementById("card-jks2");
+    if (jks2Card && user.id === "tojima") {
+      jks2Card.setAttribute("href", "./jks2/tjm/");
     }
 
     var mode = getCurrentPwMode();
