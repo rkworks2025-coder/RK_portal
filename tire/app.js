@@ -325,34 +325,10 @@
     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
   };
 
-  function setupViewportFix(){
-    // iOS 26 Safari/PWAの既知バグ対策：
-    // ソフトウェアキーボードを一度開いて閉じた後、
-    // visualViewport.offsetTop が 0 に戻らない、または
-    // visualViewport.height が window.innerHeight と一致しないまま
-    // 残ってしまうことがあり、position:fixed要素(カスタムテンキー)の
-    // 表示位置と実際の当たり判定がズレる原因になる。
-    // resize時・フォーカス移動時にズレを検知し、再計算を促す。
-    const vv = window.visualViewport;
-    if(!vv) return;
-    const correctViewport = () => {
-      const heightDiff = Math.abs(window.innerHeight - vv.height);
-      if(vv.offsetTop !== 0 || heightDiff > 2){
-        window.scrollBy(0, -1);
-        window.scrollBy(0, 1);
-      }
-    };
-    vv.addEventListener('resize', correctViewport);
-    document.addEventListener('focusout', () => {
-      setTimeout(correctViewport, 50);
-      setTimeout(correctViewport, 300);
-    }, true);
-  }
-
   function init(){
     // 担当者が未選択ならポータルの選択画面へ戻す（RK_portal統合対応）
     if (typeof requireUser === "function" && !requireUser("../select-user.html")) return;
-    applyUrl(); showPrevPlaceholders(); fetchSheetData(); wire(); setupAutoAdvance(); setupCustomKeypad(); setupViewportFix();
+    applyUrl(); showPrevPlaceholders(); fetchSheetData(); wire(); setupAutoAdvance(); setupCustomKeypad();
     preloadWorkSplash(); 
     if(form){
       form.addEventListener('submit', async ev => {
