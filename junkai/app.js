@@ -142,30 +142,10 @@ var Junkai = (() => {
   }
 
   // TireCheck(別オリジン)からのpostMessageを受信する。
-  // window.openで開いたタブからのメッセージのみを処理対象とする。
-  // ここでは即時にfireTireCompletionを呼ばず、保留しておくだけにする。
-  // (この時点ではTireCheckタブがフォーカスされており、junkaiタブは
-  //  バックグラウンドのため、ここでsetIntervalを始めても完了前に
-  //  タイムアウトする可能性がある)
-  window.addEventListener('message', (ev) => {
-    if (ev.origin !== 'https://rkworks2025-coder.github.io') return;
-    const data = ev.data;
-    if (!data || typeof data !== 'object') return;
-    if (data.type === 'tire_completed' && data.plate) {
-      pendingTireCompletionPlate = data.plate;
-      // タブがすでに表示状態(visible)であれば、ここで即発火してよい
-      if (document.visibilityState === 'visible') {
-        pendingTireCompletionPlate = null;
-        fireTireCompletion(data.plate);
-      }
-    }
-    if (data.type === 'splash_preloaded' && data.url) {
-      // TireCheck側でプリロードしたスプラッシュ画像URLを、
-      // 巡回アプリ自身のlocalStorageに保存する。
-      // (work/作業管理アプリへの遷移時にこの値を使うため)
-      localStorage.setItem("junkai:preloaded_splash_url", data.url);
-    }
-  });
+  // 注: postMessage(window.opener)はiOS Safariがtarget="_blank"を
+  // 暗黙的にnoopener扱いするため使えない。
+  // TireCheckからの戻りはURLパラメータ(tire_completed_plate/splash_img)
+  // で受け取る方式に変更し、initCity内で読み取る。
 
   window.addEventListener('pageshow', (e) => {
     if (e.persisted) {
@@ -617,6 +597,26 @@ var Junkai = (() => {
   }
 
   async function initCity(cityKey) {
+    // TireCheck(別オリジン)の「巡回アプリに戻る」からの遷移を、
+    // URLパラメータ経由で受け取る。
+    const returnParams = new URLSearchParams(location.search);
+    const tireCompletedPlate = returnParams.get('tire_completed_plate');
+    const splashImg = returnParams.get('splash_img');
+    if (splashImg) {
+      localStorage.setItem("junkai:preloaded_splash_url", splashImg);
+    }
+    if (tireCompletedPlate) {
+      pendingTireCompletionPlate = tireCompletedPlate;
+    }
+    if (tireCompletedPlate || splashImg) {
+      // URLにパラメータを残さない（再読み込み・共有時の誤動作防止）
+      returnParams.delete('tire_completed_plate');
+      returnParams.delete('splash_img');
+      const cleanQuery = returnParams.toString();
+      const cleanUrl = location.pathname + (cleanQuery ? '?' + cleanQuery : '');
+      history.replaceState(null, '', cleanUrl);
+    }
+
     loadLocalConfig(); 
     let cityName = cityKey;
     let targetCfg = appConfig.find(c => c.name === cityKey) || appConfig.find(c => c.slug === cityKey);
@@ -774,13 +774,12 @@ var Junkai = (() => {
         // <a target="_blank"> をユーザーが直接タップする形にする必要がある。
         // TireCheckは別ドメインのためポータルのlocalStorage(担当者情報)を
         // 直接読めないので、operatorパラメータとしてURLに含めて渡す。
+        // 戻り先(city等のパラメータを含む現在のURL)もreturn_urlとして渡す。
         const tireOperator = (typeof getCurrentUser === "function" && getCurrentUser()) ? getCurrentUser().id : "katayama";
-        const tireParams = new URLSearchParams({ station: rec.station || "", model: rec.model || "", plate_full: rec.plate || "", operator: tireOperator });
+        const tireParams = new URLSearchParams({ station: rec.station || "", model: rec.model || "", plate_full: rec.plate || "", operator: tireOperator, return_url: location.href });
         const tireBtn = document.createElement("a"); tireBtn.className = "tire-btn"; tireBtn.textContent = "点検";
         tireBtn.href = `${TIRE_APP_URL}?${tireParams.toString()}`;
         tireBtn.target = "_blank";
-        // postMessageでTireCheckからこのタブ(window.opener)へ通知を送る必要があるため
-        // noopenerは付けない(付けるとwindow.openerがnullになり連携できなくなる)
         tireBtn.dataset.tirePlate = rec.plate || "";
         tireBtn.addEventListener("click", () => {
           // JKS-II経由の場合のlocalStorageをクリア（ループ防止）
