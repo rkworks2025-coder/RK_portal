@@ -622,7 +622,7 @@ function filterByClusterMode(items) {
   const result = [];
   groups.forEach((group) => {
     const rep = group.find(c => c.isUrgent) || group[0];
-    const activeCount = group.length;
+    const activeCount = rep.availableCount !== undefined ? rep.availableCount : group.length;
     const total = rep.stationTotal || activeCount;
     const checked = rep.stationChecked || 0;
     const remaining = total - checked;
