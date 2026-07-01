@@ -1,127 +1,107 @@
 // ===== JKS-II app.js (Map版) =====
 
 // ===== ステーションデータ =====
-const STATIONS_YAMATO = [
-  {station_name:"タイムズ高座渋谷第９",stationCd:"QO51",lat:35.4313488727813,lng:139.4662523460068},
-  {station_name:"アーバン長窪",stationCd:"KD04",lat:35.47074039185167,lng:139.4643774706423},
-  {station_name:"ウイングヤマシタ",stationCd:"ND31",lat:35.445418909300315,lng:139.46661731316436},
-  {station_name:"上和田月極駐車場",stationCd:"JH88",lat:35.44893160223813,lng:139.46750202825376},
-  {station_name:"桜ヶ丘パーキング",stationCd:"LI64",lat:35.451594015969796,lng:139.4661397112309},
-  {station_name:"下和田駐車場",stationCd:"OM45",lat:35.42871841517343,lng:139.46777210858005},
-  {station_name:"スクエアパーキング",stationCd:"MP83",lat:35.45147701349736,lng:139.4668073971487},
-  {station_name:"セソンレオ",stationCd:"ED92",lat:35.46714334341307,lng:139.4592173432807},
-  {station_name:"イオン大和ショッピングセンター第３",stationCd:"T564",lat:35.433057599420195,lng:139.46636274803552},
-  {station_name:"タイムズ小田急大和第２",stationCd:"EA47",lat:35.46801658970733,lng:139.46228003183552},
-  {station_name:"大和市中央１丁目",stationCd:"RN29",lat:35.466383055795,lng:139.46164166200052},
-  {station_name:"タイムズ高座渋谷駅前第２",stationCd:"DP49",lat:35.432298630914836,lng:139.46597898615485},
-  {station_name:"タイムズ相鉄大和第３",stationCd:"EE69",lat:35.46990071934844,lng:139.46584177516658},
-  {station_name:"タイムズ大和駅前第２",stationCd:"Q847",lat:35.47016523146331,lng:139.46336979114437},
-  {station_name:"タイムズ大和駅前第６",stationCd:"QV94",lat:35.470260492879405,lng:139.4637021929126},
-  {station_name:"タイムズ大和駅前第５",stationCd:"EU60",lat:35.4692541305158,lng:139.46152933588692},
-  {station_name:"タイムズ大和中央第４",stationCd:"BP57",lat:35.46797563275211,lng:139.45828147352535},
-  {station_name:"タイムズ大和徳洲会病院",stationCd:"LW85",lat:35.469577425585406,lng:139.4590393080431},
-  {station_name:"タイムズ大和東第３",stationCd:"CQ93",lat:35.47037096251012,lng:139.46596808077692},
-  {station_name:"タイムズ大和深見西",stationCd:"Y302",lat:35.47513201971745,lng:139.4630810921618},
-  {station_name:"タイムズ大和南第３",stationCd:"CY75",lat:35.46948925430478,lng:139.4637667520018},
-  {station_name:"タイムズ大和南第５",stationCd:"JG24",lat:35.46929821625879,lng:139.46472306698848},
-  {station_name:"東門駐車場",stationCd:"RD51",lat:35.45839207335834,lng:139.46284316630508},
-  {station_name:"タイムズ大和柳橋",stationCd:"EU53",lat:35.45323470189422,lng:139.46448849926813},
-  {station_name:"中央１号公園前",stationCd:"MK68",lat:35.46717130626873,lng:139.45978422892907},
-  {station_name:"テーエス駐車場",stationCd:"NI87",lat:35.47409265514781,lng:139.46095706803175},
-  {station_name:"パークセレノ",stationCd:"QB13",lat:35.43479029447219,lng:139.46544994421873},
-  {station_name:"Ｂ・Ｈパーキング",stationCd:"LM62",lat:35.43456977084484,lng:139.46496276488588},
-  {station_name:"深見台１丁目第２",stationCd:"MD66",lat:35.46684800150695,lng:139.46754301104426},
-  {station_name:"深見西１丁目",stationCd:"KF80",lat:35.475297584987246,lng:139.46160664049125},
-  {station_name:"山口第１駐車場",stationCd:"KO93",lat:35.472079500534484,lng:139.45622962409962},
-  {station_name:"山口第５駐車場",stationCd:"NN55",lat:35.47264921860433,lng:139.45611782131053},
-  {station_name:"大和市中央５丁目",stationCd:"KO75",lat:35.46551068175239,lng:139.45797986088672},
-  {station_name:"大和市中央７丁目",stationCd:"LM47",lat:35.46552537769491,lng:139.4621299070554},
-  {station_name:"大和市中央５丁目３",stationCd:"KW15",lat:35.46777382526466,lng:139.45879182644146},
-  {station_name:"大和東公園",stationCd:"EI13",lat:35.47200602674974,lng:139.461281854186},
-  {station_name:"大和深見台１丁目",stationCd:"KO59",lat:35.46339258591683,lng:139.46803271007187},
-  {station_name:"大和南１丁目月極",stationCd:"LQ17",lat:35.46855268464282,lng:139.46732648684596},
-  {station_name:"ラークヴィラ",stationCd:"OK09",lat:35.47675229320314,lng:139.46117359224556},
-  {station_name:"リリーガーデン",stationCd:"OE49",lat:35.47463634527185,lng:139.46333883372486},
+const STATIONS_TAMA = [
+  {station_name:"パトリア桜ヶ丘",stationCd:"RB27",lat:35.65285,lng:139.44469},
+  {station_name:"ＵＲプラザ永山",stationCd:"BH51",lat:35.63182,lng:139.44723},
+  {station_name:"ＡＯＫＩ聖蹟桜ヶ丘店",stationCd:"QG74",lat:35.65185,lng:139.43947},
+  {station_name:"アヴァンセ唐木田",stationCd:"LP58",lat:35.61578,lng:139.40835},
+  {station_name:"多摩センター第３駐車場（小田急）",stationCd:"EA24",lat:35.62624,lng:139.42718},
+  {station_name:"永山第７駐車場（小田急）",stationCd:"DN35",lat:35.62993,lng:139.43904},
+  {station_name:"コメット",stationCd:"OJ88",lat:35.60979,lng:139.42806},
+  {station_name:"聖蹟桜ヶ丘駅北第２",stationCd:"OX67",lat:35.65252,lng:139.44595},
+  {station_name:"聖蹟桜ヶ丘東寺方１丁目",stationCd:"HH60",lat:35.64819,lng:139.44258},
+  {station_name:"聖蹟桜ヶ丘モーリン駐車場",stationCd:"MC65",lat:35.64960,lng:139.44426},
+  {station_name:"聖蹟桜ヶ丘ルートストレージ",stationCd:"KX72",lat:35.65050,lng:139.45317},
+  {station_name:"タイムズ天本病院",stationCd:"QG60",lat:35.62220,lng:139.41341},
+  {station_name:"タイムズガーデンヒルズ聖蹟桜ヶ丘",stationCd:"MF91",lat:35.65181,lng:139.44037},
+  {station_name:"タイムズ聖蹟桜ヶ丘駅北",stationCd:"LM14",lat:35.65236,lng:139.44887},
+  {station_name:"タイムズ聖蹟桜ヶ丘駅前交差点",stationCd:"R265",lat:35.65051,lng:139.44547},
+  {station_name:"タイムズ聖蹟桜ヶ丘駅南口",stationCd:"DC98",lat:35.64886,lng:139.44754},
+  {station_name:"タイムズ聖蹟和田",stationCd:"OO83",lat:35.64751,lng:139.43606},
+  {station_name:"タイムズ多摩落合",stationCd:"R269",lat:35.62602,lng:139.42434},
+  {station_name:"タイムズ多摩諏訪",stationCd:"HU00",lat:35.63418,lng:139.45078},
+  {station_name:"タイムズ多摩諏訪２丁目",stationCd:"QP12",lat:35.62821,lng:139.44926},
+  {station_name:"タイムズ多摩関戸第４",stationCd:"V070",lat:35.64181,lng:139.45135},
+  {station_name:"タイムズ多摩関戸第５",stationCd:"T797",lat:35.65023,lng:139.44808},
+  {station_name:"タイムズ多摩関戸第７",stationCd:"MF85",lat:35.64993,lng:139.45197},
+  {station_name:"タイムズ多摩鶴牧第３",stationCd:"U501",lat:35.62359,lng:139.41787},
+  {station_name:"タイムズ多摩鶴牧第４",stationCd:"KH83",lat:35.62281,lng:139.41697},
+  {station_name:"タイムズプロムナード多摩",stationCd:"KH02",lat:35.61798,lng:139.42311},
+  {station_name:"多摩愛宕４丁目",stationCd:"NY60",lat:35.63000,lng:139.43038},
+  {station_name:"多摩一ノ宮",stationCd:"KG73",lat:35.65221,lng:139.44115},
+  {station_name:"多摩一ノ宮鈴木駐車場",stationCd:"KW37",lat:35.64977,lng:139.44504},
+  {station_name:"多摩落合１丁目",stationCd:"KU12",lat:35.62331,lng:139.43087},
+  {station_name:"フォンテーヌ雅",stationCd:"RI38",lat:35.62565,lng:139.41934},
+  {station_name:"タイムズ多摩乞田",stationCd:"IU60",lat:35.63212,lng:139.44126},
+  {station_name:"タイムズ多摩センター中央第１",stationCd:"DG00",lat:35.62174,lng:139.42417},
+  {station_name:"タイムズ多摩センター中央第３",stationCd:"R724",lat:35.62345,lng:139.42365},
+  {station_name:"タイムズ多摩センター東第１",stationCd:"S306",lat:35.62455,lng:139.42851},
+  {station_name:"多摩東寺方",stationCd:"II95",lat:35.64796,lng:139.44628},
+  {station_name:"豊ヶ丘１丁目第１",stationCd:"ME81",lat:35.62623,lng:139.43088},
+  {station_name:"タイムズ永山",stationCd:"OF51",lat:35.63330,lng:139.44610},
+  {station_name:"永山第６駐車場（小田急）",stationCd:"KH39",lat:35.63042,lng:139.44111},
+  {station_name:"馬場永山パーキング",stationCd:"QG86",lat:35.63405,lng:139.44810},
+  {station_name:"ＵＲ諏訪一丁目ハイツ",stationCd:"DA16",lat:35.63168,lng:139.45020},
+  {station_name:"ＵＲ多摩永山二丁目",stationCd:"Y755",lat:35.62515,lng:139.44953},
+  {station_name:"ＵＲ多摩永山二丁目第２",stationCd:"LK45",lat:35.62604,lng:139.44927},
 ];
 
-const STATIONS_EBINA = [
-  {station_name:"綾瀬市大上５丁目",stationCd:"RN13",lat:35.46478422772997,lng:139.42955445323648},
-  {station_name:"Ｎ－ｓｔａｇｅかしわ台",stationCd:"KF65",lat:35.46827935294714,lng:139.42065673894624},
-  {station_name:"海老名駅西口（ＥＶ）",stationCd:"LL76",lat:35.456695348513115,lng:139.39081448533716},
-  {station_name:"海老名駅前第３",stationCd:"LO41",lat:35.451182820638145,lng:139.39108588738708},
-  {station_name:"海老名国分北２丁目",stationCd:"OE71",lat:35.45847454056957,lng:139.3966762410321},
-  {station_name:"海老名市中央３丁目",stationCd:"JU23",lat:35.45096004843584,lng:139.39120169795584},
-  {station_name:"タイムズ海老名中央公園地下（ＥＶ）",stationCd:"LF72",lat:35.4524839491018,lng:139.39499142178468},
-  {station_name:"扇町見世ビル",stationCd:"OL13",lat:35.45620696478464,lng:139.38791039007683},
-  {station_name:"小田急厚木第１駐車場（小田急）",stationCd:"KD03",lat:35.44283711415111,lng:139.37719532828444},
-  {station_name:"厚木第２駐車場（小田急）",stationCd:"DN33",lat:35.44337034950935,lng:139.37979646286382},
-  {station_name:"鍵渡駐車場",stationCd:"QF98",lat:35.454109512325346,lng:139.38627960696863},
-  {station_name:"かしわ台駅前",stationCd:"LD06",lat:35.466088771352915,lng:139.41438094648115},
-  {station_name:"クラウンハイツ海老名",stationCd:"MQ43",lat:35.44918028385621,lng:139.39512016785125},
-  {station_name:"さがみ野駅南口（屋上）",stationCd:"LD05",lat:35.4710448790322,lng:139.42870142470005},
-  {station_name:"シュリンプタワー（西）",stationCd:"QM94",lat:35.45390907296019,lng:139.38781608537784},
-  {station_name:"シュリンプタワー（東）",stationCd:"QM93",lat:35.45403959635696,lng:139.38842537432035},
-  {station_name:"セントガーデン海老名＿限定",stationCd:"IW70",lat:35.457922824634686,lng:139.39131143119027},
-  {station_name:"相鉄柏ケ谷月極パーキング",stationCd:"NW62",lat:35.468624743627615,lng:139.41157063072043},
-  {station_name:"イオン海老名ショッピングセンターＧ",stationCd:"CM59",lat:35.44835978997188,lng:139.39370642406848},
-  {station_name:"タイムズ海老名泉",stationCd:"KO78",lat:35.45728777183729,lng:139.38982846535433},
-  {station_name:"タイムズ海老名駅西口第２",stationCd:"BH96",lat:35.45795515668009,lng:139.3880228944212},
-  {station_name:"タイムズ海老名駅西口第３",stationCd:"BL65",lat:35.4561507330579,lng:139.3869456210073},
-  {station_name:"タイムズ海老名駅西口第４",stationCd:"HA87",lat:35.456987566218636,lng:139.38774145548084},
-  {station_name:"タイムズ海老名河原口",stationCd:"Q467",lat:35.45036253104263,lng:139.3874582854696},
-  {station_name:"タイムズ海老名中央第４",stationCd:"CE79",lat:35.45095969960914,lng:139.38906982204284},
-  {station_name:"タイムズ海老名中央第６",stationCd:"CG62",lat:35.44754826678669,lng:139.39401617602772},
-  {station_name:"タイムズ海老名中央公園地下",stationCd:"EG12",lat:35.4524839491018,lng:139.39499142178468},
-  {station_name:"タイムズかしわ台第３",stationCd:"BO13",lat:35.46352883997876,lng:139.41226913329444},
-  {station_name:"タイムズさがみ野相鉄ライフ第２",stationCd:"DB30",lat:35.47235201879705,lng:139.42967240990075},
-  {station_name:"スターバックスコーヒー海老名中央店",stationCd:"Y376",lat:35.44849979681869,lng:139.39183263430542},
-  {station_name:"タイムズ東柏ケ谷",stationCd:"BX51",lat:35.46742153818923,lng:139.42357291795614},
-  {station_name:"タイムズビナフロント",stationCd:"EW66",lat:35.45186197477463,lng:139.39008640403088},
-  {station_name:"東柏ケ谷５丁目６",stationCd:"OW93",lat:35.46890442128869,lng:139.43055243612955},
-  {station_name:"アイリスコートさがみ野",stationCd:"RN50",lat:35.47067672475835,lng:139.43632461230655},
-  {station_name:"ＰーＲＥＸさがみ野駐車場",stationCd:"LZ15",lat:35.47011542218444,lng:139.42870134660143},
-  {station_name:"ファミール",stationCd:"QB12",lat:35.46256627648722,lng:139.3957412242991},
-  {station_name:"マイシャトーさがみ野Ａ",stationCd:"QB11",lat:35.47402015808761,lng:139.4348918757585},
-  {station_name:"マハロ壱番館",stationCd:"MP82",lat:35.45763382394336,lng:139.38489728425228},
-  {station_name:"見上駐車場",stationCd:"NQ58",lat:35.46839777263622,lng:139.41492438468308},
-  {station_name:"ＵＲえびな団地",stationCd:"NP43",lat:35.4441030360536,lng:139.3813137016946},
-  {station_name:"ＵＲえびな団地３地区",stationCd:"RQ79",lat:35.44328942963265,lng:139.38127493981332},
-  {station_name:"ロイヤルプラザ海老名駐車場",stationCd:"LQ02",lat:35.457868644140184,lng:139.39527552396248},
-];
-
-const STATIONS_NAKAHARA = [
-  {station_name:"ガーラ・ヴィスタ元住吉（屋外）",stationCd:"OH00",lat:35.560453219153054,lng:139.66176544722998},
-  {station_name:"ガーラ・ヴィスタ元住吉（建物下）",stationCd:"OY31",lat:35.560453219153054,lng:139.66176544722998},
-  {station_name:"西加瀬月極駐車場",stationCd:"KI06",lat:35.56064661912213,lng:139.65868191778213},
-  {station_name:"タイムズ西加瀬",stationCd:"Y771",lat:35.55830122847612,lng:139.6584545766777},
-  {station_name:"タイムズフロール元住吉（ＥＶ）",stationCd:"JP24",lat:35.5624129188396,lng:139.65914861778217},
-  {station_name:"タイムズ元住吉第９",stationCd:"CP85",lat:35.56612942733056,lng:139.6529630883344},
-  {station_name:"タイムズ元住吉駅前第８",stationCd:"HT87",lat:35.564030727637714,lng:139.65435331778215},
-  {station_name:"ホンダソーラービル",stationCd:"QX55",lat:35.563244727752746,lng:139.6487576999911},
-  {station_name:"ウェルス元住吉",stationCd:"OO35",lat:35.56124827353539,lng:139.64949231778215},
-  {station_name:"ドミール・トモ",stationCd:"RF57",lat:35.56121771001222,lng:139.64924652943884},
-  {station_name:"木月天王森交差点",stationCd:"NF82",lat:35.56130660999678,lng:139.65046797054333},
-  {station_name:"コンフォート住吉",stationCd:"RF65",lat:35.55985997374799,lng:139.6565022705433},
-  {station_name:"タイムズ関東労災病院",stationCd:"KR66",lat:35.56781379985506,lng:139.6578242999911},
-  {station_name:"ＵＲ木月住吉団地",stationCd:"CV83",lat:35.56496772750059,lng:139.66097167054332},
-  {station_name:"ルシエル",stationCd:"EH12",lat:35.581791500379474,lng:139.63638854534832},
-  {station_name:"タイムズ下小田中",stationCd:"R610",lat:35.58028881597967,lng:139.63743881778214},
-  {station_name:"タイムズ下小田中（ＥＶ）",stationCd:"JP32",lat:35.58028881597967,lng:139.63743881778214},
-  {station_name:"ラフォーレ武蔵中原",stationCd:"ED02",lat:35.579670425348446,lng:139.63659327054333},
-  {station_name:"リブリ・アフィニティ",stationCd:"DW42",lat:35.57101281746388,lng:139.6362169999911},
-  {station_name:"ネイバーズ武蔵中原",stationCd:"ES84",lat:35.57470082607598,lng:139.63673239999113},
-  {station_name:"上小田中１丁目第３駐車場",stationCd:"JC77",lat:35.59328481389968,lng:139.62957724109555},
-  {station_name:"タイムズ上小田中",stationCd:"T881",lat:35.585102824553076,lng:139.6356309999911},
-  {station_name:"ラフィーネ武蔵中原",stationCd:"KZ71",lat:35.58394107005918,lng:139.6368476999911},
-  {station_name:"ノーブル駐車場",stationCd:"IJ64",lat:35.58778887884996,lng:139.6315955883344},
-  {station_name:"ルピナス壱番館",stationCd:"JS19",lat:35.58177443058196,lng:139.6351560592305},
-  {station_name:"グランクラージュ",stationCd:"QH26",lat:35.58366131543998,lng:139.63393145888662},
-  {station_name:"タイムズ又玄寺",stationCd:"RR47",lat:35.585153529310425,lng:139.63302501534992},
+const STATIONS_FUCHU = [
+  {station_name:"エリオ駐車場",stationCd:"KB50",lat:35.674979,lng:139.483962},
+  {station_name:"タイムズ北府中",stationCd:"BP54",lat:35.682679,lng:139.471187},
+  {station_name:"タイムズ多摩川競艇場前",stationCd:"BX03",lat:35.658916,lng:139.499385},
+  {station_name:"タイムズ大國魂神社",stationCd:"BJ56",lat:35.669808,lng:139.479747},
+  {station_name:"タイムズ大國魂神社（ＥＶ）",stationCd:"RJ77",lat:35.669808,lng:139.479747},
+  {station_name:"タイムズ府中宮町第４",stationCd:"Q486",lat:35.669884,lng:139.482495},
+  {station_name:"タイムズ府中宮町第６",stationCd:"U074",lat:35.670128,lng:139.480657},
+  {station_name:"タイムズ府中宮西町第３",stationCd:"KV42",lat:35.670739,lng:139.475488},
+  {station_name:"タイムズ府中寿町第２",stationCd:"U641",lat:35.674918,lng:139.475320},
+  {station_name:"タイムズ府中小柳町第２",stationCd:"OK22",lat:35.664278,lng:139.502608},
+  {station_name:"タイムズ府中小柳町第３",stationCd:"QA10",lat:35.662024,lng:139.502427},
+  {station_name:"タイムズ府中新町１丁目",stationCd:"QB10",lat:35.687322,lng:139.487356},
+  {station_name:"タイムズ府中栄町",stationCd:"BA69",lat:35.689633,lng:139.479922},
+  {station_name:"タイムズ府中栄町第３",stationCd:"IU62",lat:35.688779,lng:139.479370},
+  {station_name:"タイムズ府中町第３",stationCd:"T864",lat:35.674777,lng:139.481244},
+  {station_name:"タイムズ府中緑町第３",stationCd:"EL20",lat:35.672004,lng:139.484468},
+  {station_name:"タイムズ府中緑町第４",stationCd:"MJ91",lat:35.671460,lng:139.486792},
+  {station_name:"タイムズ府中若松町第２",stationCd:"KE79",lat:35.673812,lng:139.498579},
+  {station_name:"タイムズ府中ＦＲＣ",stationCd:"EJ52",lat:35.670787,lng:139.477875},
+  {station_name:"タイムズ東京競馬場横",stationCd:"Y343",lat:35.662479,lng:139.491297},
+  {station_name:"タイムズ東京競馬場横第２",stationCd:"RN89",lat:35.661728,lng:139.491862},
+  {station_name:"タイムズ東府中駅前",stationCd:"BE95",lat:35.669504,lng:139.496397},
+  {station_name:"フォトレ府中",stationCd:"DP94",lat:35.672102,lng:139.475670},
+  {station_name:"マイプレイス東府中",stationCd:"IR04",lat:35.668110,lng:139.496191},
+  {station_name:"メルベーユ多磨霊園",stationCd:"LJ16",lat:35.665129,lng:139.505486},
+  {station_name:"ユーコート府中",stationCd:"CN26",lat:35.672585,lng:139.482908},
+  {station_name:"レジデンス若松一番館",stationCd:"KU17",lat:35.672820,lng:139.501841},
+  {station_name:"ヴェルト府中",stationCd:"QV05",lat:35.672478,lng:139.483006},
+  {station_name:"北府中駅前",stationCd:"OL69",lat:35.678863,lng:139.473652},
+  {station_name:"天神町１丁目",stationCd:"NH42",lat:35.678210,lng:139.488135},
+  {station_name:"天神町２丁目",stationCd:"QE33",lat:35.681208,lng:139.491883},
+  {station_name:"天神町４丁目",stationCd:"OC70",lat:35.681550,lng:139.492950},
+  {station_name:"府中八幡町２丁目",stationCd:"BW45",lat:35.670268,lng:139.487017},
+  {station_name:"府中大久保駐車場",stationCd:"BS67",lat:35.674966,lng:139.483232},
+  {station_name:"府中幸町１丁目",stationCd:"OT24",lat:35.678407,lng:139.481923},
+  {station_name:"府中是政６丁目",stationCd:"MT68",lat:35.655486,lng:139.483026},
+  {station_name:"府中栄町第４",stationCd:"QE32",lat:35.690177,lng:139.479696},
+  {station_name:"府中浅間町２丁目",stationCd:"QZ63",lat:35.683984,lng:139.497154},
+  {station_name:"府中町２丁目駐車場",stationCd:"DX27",lat:35.673969,lng:139.484253},
+  {station_name:"府中緑町１丁目",stationCd:"DB87",lat:35.671030,lng:139.486794},
+  {station_name:"府中緑町２丁目第２",stationCd:"MH17",lat:35.672586,lng:139.490149},
+  {station_name:"府中緑町２丁目第３",stationCd:"OG99",lat:35.671273,lng:139.487823},
+  {station_name:"府中若松町１丁目第２",stationCd:"MR39",lat:35.669958,lng:139.501518},
+  {station_name:"府中若松町２丁目",stationCd:"LR95",lat:35.672551,lng:139.496466},
+  {station_name:"東府中マンション",stationCd:"KR74",lat:35.669518,lng:139.496391},
+  {station_name:"清水が丘１丁目",stationCd:"QZ05",lat:35.666925,lng:139.493610},
+  {station_name:"ＭＡＸＩＶ東府中",stationCd:"LV90",lat:35.671863,lng:139.497634},
+  {station_name:"Ｔ'ｓ ｇａｒｄｅｎ府中",stationCd:"EA57",lat:35.678233,lng:139.486989},
+  {station_name:"ＵＲ府中グリーンハイツ",stationCd:"V216",lat:35.678543,lng:139.477863},
 ];
 
 // ===== 状態管理 =====
-let CURRENT_AREA = 'yamato';
-let STATIONS = STATIONS_YAMATO.map(s => ({...s}));
+let CURRENT_AREA = 'tama';
+let STATIONS = STATIONS_TAMA.map(s => ({...s}));
 let gasStationMap = new Map();
 let gMap = null;
 let markerMap = new Map(); // stationCd → marker
@@ -141,11 +121,10 @@ const JUNKAI_GAS_URL = 'https://script.google.com/macros/s/AKfycbyXbPaarnD7mQa_r
 
 // ===== Google Maps 初期化 =====
 const AREA_CENTER = {
-  yamato:   { lat: 35.4615, lng: 139.4633 },
-  ebina:    { lat: 35.4576, lng: 139.4002 },
-  nakahara: { lat: 35.5719, lng: 139.6458 },
+  tama:  { lat: 35.635, lng: 139.440 },
+  fuchu: { lat: 35.672, lng: 139.485 },
 };
-const AREA_ZOOM = { yamato: 14, ebina: 13, nakahara: 14 };
+const AREA_ZOOM = { tama: 13, fuchu: 14 };
 
 const MAP_STYLES = [
   { elementType: 'geometry', stylers: [{ color: '#0d1520' }] },
@@ -166,7 +145,7 @@ const MAP_STYLES = [
 ];
 
 function initMap() {
-  if (typeof requireUser === "function" && !requireUser("../../select-user.html")) return;
+  if (typeof requireUser === "function" && !requireUser("../select-user.html")) return;
   const center = AREA_CENTER[CURRENT_AREA];
   gMap = new google.maps.Map(document.getElementById('gmap'), {
     center, zoom: AREA_ZOOM[CURRENT_AREA],
@@ -395,7 +374,7 @@ async function switchArea(areaKey) {
   CURRENT_AREA = areaKey;
 
   STATIONS.length = 0;
-  const src = areaKey === 'nakahara' ? STATIONS_NAKAHARA : areaKey === 'ebina' ? STATIONS_EBINA : STATIONS_YAMATO;
+  const src = areaKey === 'fuchu' ? STATIONS_FUCHU : STATIONS_TAMA;
   src.forEach(s => STATIONS.push({...s}));
 
   document.querySelectorAll('.area-tab').forEach(btn => {
@@ -643,7 +622,7 @@ function filterByClusterMode(items) {
   const result = [];
   groups.forEach((group) => {
     const rep = group.find(c => c.isUrgent) || group[0];
-    const activeCount = group.length;
+    const activeCount = rep.availableCount !== undefined ? rep.availableCount : group.length;
     const total = rep.stationTotal || activeCount;
     const checked = rep.stationChecked || 0;
     const remaining = total - checked;
