@@ -101,7 +101,7 @@
   // 切れていればTMA側が自動でログイン画面にリダイレクトする。
   // 常にログイン画面を経由させると、セッションが有効な時にも
   // 無駄なログイン操作が挟まってしまうため。
-  const TMA_MAIN_URL = "https://dailycheck.tc-extsys.jp/tcrappsweb/web/routineStation.html";
+  const TMA_MAIN_URL = "https://dailycheck.tc-extsys.jp/tcrappsweb/web/tawTop.html";
 
   function buildMenuItems() {
     return [
