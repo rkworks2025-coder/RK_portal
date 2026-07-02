@@ -20,10 +20,12 @@
 (function () {
   const STYLE = `
     .rk-appmenu-btn, .rk-appmenu-btn-inline {
+      -webkit-appearance: none;
+      appearance: none;
       border-radius: 50%;
       background: rgba(255,255,255,0.08);
       border: 1px solid rgba(255,255,255,0.25);
-      color: inherit;
+      color: #fff;
       font-size: 18px;
       line-height: 1;
       display: flex;
