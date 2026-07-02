@@ -122,7 +122,16 @@ header {
   border: 1px solid var(--accent2); color: var(--accent2);
   background: rgba(61,155,255,0.08); border-radius: 4px; cursor: pointer;
 }
-.detail-station { font-size: 15px; font-weight: bold; color: var(--text-bright); margin-bottom: 4px; }
+.detail-close {
+  position: absolute; top: 8px; left: 10px;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; line-height: 1;
+  border: 1px solid #2a3d52; color: var(--text-dim);
+  background: rgba(255,255,255,0.05); border-radius: 8px; cursor: pointer;
+}
+.detail-close:active { background: rgba(255,255,255,0.12); }
+.detail-station { font-size: 15px; font-weight: bold; color: var(--text-bright); margin-bottom: 4px; padding: 4px 50px 0; }
 .detail-cd { font-size: 12px; font-family: 'Noto Sans JP', sans-serif; color: var(--text-dim); margin-bottom: 14px; }
 .detail-vehicles { display: flex; flex-direction: column; gap: 12px; }
 
