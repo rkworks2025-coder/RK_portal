@@ -1,6 +1,11 @@
 /* shared/app-menu.js
    全アプリ共通の3点メニュー。
-   ヘッダーのスペースを使わず、画面右上にfixedで重ねて表示する。
+
+   各アプリのヘッダー内の「既存ボタン群」の中に、実際の子要素として
+   3点メニューボタンを挿入する。画面に絶対座標で重ねる方式は、
+   アプリごとにヘッダーのボタン配置が違うため衝突しやすく、
+   採用していない（挿入先が見つからない場合のみ右上に固定表示する）。
+
    各アプリのindex.htmlで以下を読み込むだけで動作する：
      <script src="../shared/user-context.js"></script>
      <script src="../shared/app-menu.js"></script>
@@ -14,24 +19,36 @@
 
 (function () {
   const STYLE = `
+    .rk-appmenu-btn, .rk-appmenu-btn-inline {
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: inherit;
+      font-size: 18px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      padding: 0;
+    }
+    /* 挿入先が見つからない場合のフォールバック（画面右上に固定） */
     .rk-appmenu-btn {
       position: fixed;
       top: calc(8px + env(safe-area-inset-top));
       right: 8px;
       width: 36px;
       height: 36px;
-      border-radius: 50%;
-      background: rgba(20,20,24,0.85);
-      border: 1px solid rgba(255,255,255,0.15);
-      color: #fff;
       font-size: 20px;
-      line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       z-index: 2000;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
+    }
+    /* 各アプリのヘッダー内に挿入する場合（既存ボタン列の一員として並ぶ） */
+    .rk-appmenu-btn-inline {
+      flex-shrink: 0;
+      width: 30px;
+      height: 30px;
+      margin-left: 4px;
     }
     .rk-appmenu-overlay {
       position: fixed;
@@ -43,8 +60,6 @@
     .rk-appmenu-overlay.show { display: block; }
     .rk-appmenu-popup {
       position: fixed;
-      top: calc(52px + env(safe-area-inset-top));
-      right: 8px;
       background: #1a1a1e;
       border: 1px solid rgba(255,255,255,0.15);
       border-radius: 12px;
@@ -93,14 +108,34 @@
     ];
   }
 
+  // ===== 挿入先の探索 =====
+  // 各アプリの「既存ボタン群」を優先的に探し、見つかった場所に
+  // 通常のflex子要素として挿入する。見つからなければ右上に固定表示。
+  const HOST_SELECTORS = [
+    ".appbar .btns",     // 巡回(junkai)
+    ".update-controls",  // 予約表示(yoyaku)
+    ".update-wrapper",   // 初代JKS
+    "header"              // JKS-II（シンプルな1行ヘッダー、末尾に追加）
+  ];
+
+  function findHost() {
+    for (const sel of HOST_SELECTORS) {
+      const el = document.querySelector(sel);
+      if (el) return el;
+    }
+    return null;
+  }
+
   function init() {
     const style = document.createElement("style");
     style.textContent = STYLE;
     document.head.appendChild(style);
 
+    const host = findHost();
+
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "rk-appmenu-btn";
+    btn.className = host ? "rk-appmenu-btn-inline" : "rk-appmenu-btn";
     btn.textContent = "⋮";
     btn.setAttribute("aria-label", "アプリ切り替えメニュー");
 
@@ -119,9 +154,26 @@
       popup.appendChild(a);
     });
 
+    // ボタンの実際の位置を毎回計算してポップアップを直下に出す。
+    // ヘッダーに挿入する方式にしたため、ボタンの場所がアプリごとに
+    // 変わることを前提にしている。
+    function positionPopup() {
+      const margin = 8;
+      const rect = btn.getBoundingClientRect();
+      popup.style.display = "block"; // 幅計算のため先に表示
+      const width = popup.offsetWidth;
+      let left = rect.right - width;
+      if (left < margin) left = margin;
+      const maxLeft = window.innerWidth - width - margin;
+      if (left > maxLeft) left = maxLeft;
+      let top = rect.bottom + margin;
+      popup.style.left = left + "px";
+      popup.style.top = top + "px";
+    }
+
     function openMenu() {
       overlay.classList.add("show");
-      popup.style.display = "block";
+      positionPopup();
     }
     function closeMenu() {
       overlay.classList.remove("show");
@@ -133,7 +185,12 @@
 
     document.body.appendChild(overlay);
     document.body.appendChild(popup);
-    document.body.appendChild(btn);
+
+    if (host) {
+      host.appendChild(btn);
+    } else {
+      document.body.appendChild(btn);
+    }
   }
 
   if (document.readyState === "loading") {
