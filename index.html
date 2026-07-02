@@ -67,6 +67,21 @@
         <span class="portal-card-label">作業実績</span>
       </a>
 
+      <a href="https://dailycheck.tc-extsys.jp/tcrappsweb/web/routineStation.html" class="portal-card">
+        <span class="portal-card-icon icon-tma"><i class="ti ti-external-link" aria-hidden="true"></i></span>
+        <span class="portal-card-label">TMA</span>
+      </a>
+
+    </div>
+
+    <div class="portal-tma-bookmarklet-row">
+      <a href="#" id="tmaBookmarklet" class="portal-tma-bookmarklet" draggable="true">
+        <i class="ti ti-key" aria-hidden="true"></i> TMA自動ログイン
+      </a>
+      <p class="portal-tma-bookmarklet-hint">
+        この「TMA自動ログイン」を長押し（PCならドラッグ）してブックマークバーに保存してください。<br>
+        TMAのログイン画面を開いた状態でこのブックマークをタップすると、ID・パスワードが自動入力されます。
+      </p>
     </div>
 
   </div>
@@ -123,12 +138,54 @@
       return;
     }
     updatePwBadge(mode);
+    setupTmaBookmarklet();
 
     var btn1 = document.getElementById("pwModalMode1");
     var btn2 = document.getElementById("pwModalMode2");
     if (btn1) btn1.textContent = getPwValueFor(user.id, "mode1") || "--";
     if (btn2) btn2.textContent = getPwValueFor(user.id, "mode2") || "--";
   })();
+
+  // ===== TMA自動ログイン用ブックマークレット =====
+  // TMAのログイン画面（別オリジン）は、このポータルのJSから直接
+  // 操作できないため、ブックマークレット（javascript: リンク）として
+  // 生成する。ユーザーがTMAのログイン画面を開いた状態でこのブック
+  // マークをタップすると、そのページ上でブックマークレット自身の
+  // JSが実行され、ID・パスワードを自動入力してログインする。
+  function setupTmaBookmarklet() {
+    var link = document.getElementById("tmaBookmarklet");
+    if (!link || typeof getCurrentTmaLoginInfo !== "function") return;
+
+    var info = getCurrentTmaLoginInfo();
+    if (!info) return;
+
+    var payload = JSON.stringify(info);
+    var src = "(function(){" +
+      "var info=" + payload + ";" +
+      "function set(id,val){" +
+      "  var el=document.getElementById(id);" +
+      "  if(!el) return false;" +
+      "  el.value=val;" +
+      "  el.dispatchEvent(new Event('input',{bubbles:true}));" +
+      "  el.dispatchEvent(new Event('change',{bubbles:true}));" +
+      "  return true;" +
+      "}" +
+      "var ok1=set('cardNo1',info.commonId);" +
+      "var ok2=set('cardNo2',info.userId);" +
+      "var ok3=set('password',info.password);" +
+      "if(!ok1||!ok2||!ok3){alert('TMAのログイン画面が開かれていません');return;}" +
+      "var pwEl=document.getElementById('password');" +
+      "var btn=document.querySelector('button[type=submit],input[type=submit]');" +
+      "if(btn){btn.click();}" +
+      "else if(pwEl){" +
+      "  ['keydown','keypress','keyup'].forEach(function(type){" +
+      "    pwEl.dispatchEvent(new KeyboardEvent(type,{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true}));" +
+      "  });" +
+      "}" +
+      "})();";
+
+    link.setAttribute("href", "javascript:" + encodeURIComponent(src));
+  }
 
   function updatePwBadge(mode) {
     var badgeText = document.getElementById("pw-mode-badge-text");
@@ -157,12 +214,14 @@
   document.getElementById("pwModalMode1").addEventListener("click", function () {
     setCurrentPwMode("mode1");
     updatePwBadge("mode1");
+    setupTmaBookmarklet();
     pwModal.classList.remove("show");
   });
 
   document.getElementById("pwModalMode2").addEventListener("click", function () {
     setCurrentPwMode("mode2");
     updatePwBadge("mode2");
+    setupTmaBookmarklet();
     pwModal.classList.remove("show");
   });
 </script>
