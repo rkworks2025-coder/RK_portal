@@ -78,12 +78,22 @@
       <a href="#" id="tmaBookmarklet" class="portal-tma-bookmarklet" draggable="true">
         <i class="ti ti-key" aria-hidden="true"></i> TMA自動ログイン
       </a>
-      <p class="portal-tma-bookmarklet-hint">
-        この「TMA自動ログイン」を長押し（PCならドラッグ）してブックマークバーに保存してください。<br>
-        TMAのログイン画面を開いた状態でこのブックマークをタップすると、ID・パスワードが自動入力されます。
-      </p>
+      <button type="button" id="tmaHelpBtn" class="portal-tma-help-btn" aria-label="使い方">?</button>
     </div>
 
+  </div>
+
+  <div id="tmaHelpModal" class="modal">
+    <div class="dialog">
+      <h3>TMA自動ログインの使い方</h3>
+      <p class="dialog-msg">
+        「TMA自動ログイン」を長押し（PCならドラッグ）してブックマークバーに保存してください。<br><br>
+        TMAのログイン画面を開いた状態でこのブックマークをタップすると、ID・パスワードが自動入力されます。
+      </p>
+      <div class="tma-confirm-actions">
+        <button id="tmaHelpClose" class="btn">閉じる</button>
+      </div>
+    </div>
   </div>
 
   <div id="pwModal" class="modal">
@@ -173,15 +183,26 @@
       "var ok1=set('cardNo1',info.commonId);" +
       "var ok2=set('cardNo2',info.userId);" +
       "var ok3=set('password',info.password);" +
-      "if(!ok1||!ok2||!ok3){alert('TMAのログイン画面が開かれていません');return;}" +
-      "var pwEl=document.getElementById('password');" +
-      "var btn=document.querySelector('button[type=submit],input[type=submit]');" +
-      "if(btn){btn.click();}" +
-      "else if(pwEl){" +
-      "  ['keydown','keypress','keyup'].forEach(function(type){" +
-      "    pwEl.dispatchEvent(new KeyboardEvent(type,{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true}));" +
-      "  });" +
+      "if(ok1&&ok2&&ok3){" +
+      "  var pwEl=document.getElementById('password');" +
+      "  var btn=document.querySelector('button[type=submit],input[type=submit]');" +
+      "  if(btn){btn.click();}" +
+      "  else if(pwEl){" +
+      "    ['keydown','keypress','keyup'].forEach(function(type){" +
+      "      pwEl.dispatchEvent(new KeyboardEvent(type,{key:'Enter',code:'Enter',keyCode:13,which:13,bubbles:true}));" +
+      "    });" +
+      "  }" +
+      "  return;" +
       "}" +
+      // 入力欄が見つからない場合、「ログインが必要です」の確認画面の
+      // 可能性があるので、「ログイン」ボタンを自動でタップする。
+      // そのボタンを押すとページ遷移するため、遷移後にもう一度
+      // 同じブックマークをタップしてもらう必要がある。
+      "var els=document.querySelectorAll('button,a,[role=button]');" +
+      "for(var i=0;i<els.length;i++){" +
+      "  if(els[i].textContent.trim()==='ログイン'){els[i].click();return;}" +
+      "}" +
+      "alert('TMAのログイン画面が見つかりませんでした');" +
       "})();";
 
     link.setAttribute("href", "javascript:" + encodeURIComponent(src));
@@ -196,6 +217,14 @@
   }
 
   var pwModal = document.getElementById("pwModal");
+
+  var tmaHelpModal = document.getElementById("tmaHelpModal");
+  document.getElementById("tmaHelpBtn").addEventListener("click", function () {
+    tmaHelpModal.classList.add("show");
+  });
+  document.getElementById("tmaHelpClose").addEventListener("click", function () {
+    tmaHelpModal.classList.remove("show");
+  });
 
   document.getElementById("pw-mode-badge").addEventListener("click", function () {
     var user = getCurrentUser();
