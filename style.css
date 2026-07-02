@@ -30,6 +30,9 @@
 
   --rk-tile-jks2: rgba(212, 83, 126, 0.16);
   --rk-icon-jks2: #ed93b1;
+
+  --rk-tile-tma: rgba(90, 200, 160, 0.16);
+  --rk-icon-tma: #7fe0bd;
 }
 
 * {
@@ -165,6 +168,7 @@ html, body {
 .portal-card-icon.icon-jisseki { background: var(--rk-tile-jisseki); color: var(--rk-icon-jisseki); }
 .portal-card-icon.icon-jks { background: var(--rk-tile-jks); color: var(--rk-icon-jks); }
 .portal-card-icon.icon-jks2 { background: var(--rk-tile-jks2); color: var(--rk-icon-jks2); }
+.portal-card-icon.icon-tma { background: var(--rk-tile-tma); color: var(--rk-icon-tma); }
 
 .portal-card-label {
   font-size: 14px;
@@ -183,6 +187,41 @@ html, body {
 
 .portal-card-badge.badge-jks { color: var(--rk-icon-jks); background: var(--rk-tile-jks); }
 .portal-card-badge.badge-jks2 { color: var(--rk-icon-jks2); background: var(--rk-tile-jks2); }
+
+.portal-tma-bookmarklet-row {
+  padding: 0 18px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.portal-tma-bookmarklet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: var(--rk-tile-tma);
+  color: var(--rk-icon-tma);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.portal-tma-help-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--rk-bg-header-border);
+  background: transparent;
+  color: var(--rk-text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* ---------- 担当者選択画面 ---------- */
 
