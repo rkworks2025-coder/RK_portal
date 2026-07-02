@@ -1,107 +1,8 @@
 // ===== JKS-II app.js (Map版) =====
 
-// ===== ステーションデータ =====
-const STATIONS_TAMA = [
-  {station_name:"パトリア桜ヶ丘",stationCd:"RB27",lat:35.65285,lng:139.44469},
-  {station_name:"ＵＲプラザ永山",stationCd:"BH51",lat:35.63182,lng:139.44723},
-  {station_name:"ＡＯＫＩ聖蹟桜ヶ丘店",stationCd:"QG74",lat:35.65185,lng:139.43947},
-  {station_name:"アヴァンセ唐木田",stationCd:"LP58",lat:35.61578,lng:139.40835},
-  {station_name:"多摩センター第３駐車場（小田急）",stationCd:"EA24",lat:35.62624,lng:139.42718},
-  {station_name:"永山第７駐車場（小田急）",stationCd:"DN35",lat:35.62993,lng:139.43904},
-  {station_name:"コメット",stationCd:"OJ88",lat:35.60979,lng:139.42806},
-  {station_name:"聖蹟桜ヶ丘駅北第２",stationCd:"OX67",lat:35.65252,lng:139.44595},
-  {station_name:"聖蹟桜ヶ丘東寺方１丁目",stationCd:"HH60",lat:35.64819,lng:139.44258},
-  {station_name:"聖蹟桜ヶ丘モーリン駐車場",stationCd:"MC65",lat:35.64960,lng:139.44426},
-  {station_name:"聖蹟桜ヶ丘ルートストレージ",stationCd:"KX72",lat:35.65050,lng:139.45317},
-  {station_name:"タイムズ天本病院",stationCd:"QG60",lat:35.62220,lng:139.41341},
-  {station_name:"タイムズガーデンヒルズ聖蹟桜ヶ丘",stationCd:"MF91",lat:35.65181,lng:139.44037},
-  {station_name:"タイムズ聖蹟桜ヶ丘駅北",stationCd:"LM14",lat:35.65236,lng:139.44887},
-  {station_name:"タイムズ聖蹟桜ヶ丘駅前交差点",stationCd:"R265",lat:35.65051,lng:139.44547},
-  {station_name:"タイムズ聖蹟桜ヶ丘駅南口",stationCd:"DC98",lat:35.64886,lng:139.44754},
-  {station_name:"タイムズ聖蹟和田",stationCd:"OO83",lat:35.64751,lng:139.43606},
-  {station_name:"タイムズ多摩落合",stationCd:"R269",lat:35.62602,lng:139.42434},
-  {station_name:"タイムズ多摩諏訪",stationCd:"HU00",lat:35.63418,lng:139.45078},
-  {station_name:"タイムズ多摩諏訪２丁目",stationCd:"QP12",lat:35.62821,lng:139.44926},
-  {station_name:"タイムズ多摩関戸第４",stationCd:"V070",lat:35.64181,lng:139.45135},
-  {station_name:"タイムズ多摩関戸第５",stationCd:"T797",lat:35.65023,lng:139.44808},
-  {station_name:"タイムズ多摩関戸第７",stationCd:"MF85",lat:35.64993,lng:139.45197},
-  {station_name:"タイムズ多摩鶴牧第３",stationCd:"U501",lat:35.62359,lng:139.41787},
-  {station_name:"タイムズ多摩鶴牧第４",stationCd:"KH83",lat:35.62281,lng:139.41697},
-  {station_name:"タイムズプロムナード多摩",stationCd:"KH02",lat:35.61798,lng:139.42311},
-  {station_name:"多摩愛宕４丁目",stationCd:"NY60",lat:35.63000,lng:139.43038},
-  {station_name:"多摩一ノ宮",stationCd:"KG73",lat:35.65221,lng:139.44115},
-  {station_name:"多摩一ノ宮鈴木駐車場",stationCd:"KW37",lat:35.64977,lng:139.44504},
-  {station_name:"多摩落合１丁目",stationCd:"KU12",lat:35.62331,lng:139.43087},
-  {station_name:"フォンテーヌ雅",stationCd:"RI38",lat:35.62565,lng:139.41934},
-  {station_name:"タイムズ多摩乞田",stationCd:"IU60",lat:35.63212,lng:139.44126},
-  {station_name:"タイムズ多摩センター中央第１",stationCd:"DG00",lat:35.62174,lng:139.42417},
-  {station_name:"タイムズ多摩センター中央第３",stationCd:"R724",lat:35.62345,lng:139.42365},
-  {station_name:"タイムズ多摩センター東第１",stationCd:"S306",lat:35.62455,lng:139.42851},
-  {station_name:"多摩東寺方",stationCd:"II95",lat:35.64796,lng:139.44628},
-  {station_name:"豊ヶ丘１丁目第１",stationCd:"ME81",lat:35.62623,lng:139.43088},
-  {station_name:"タイムズ永山",stationCd:"OF51",lat:35.63330,lng:139.44610},
-  {station_name:"永山第６駐車場（小田急）",stationCd:"KH39",lat:35.63042,lng:139.44111},
-  {station_name:"馬場永山パーキング",stationCd:"QG86",lat:35.63405,lng:139.44810},
-  {station_name:"ＵＲ諏訪一丁目ハイツ",stationCd:"DA16",lat:35.63168,lng:139.45020},
-  {station_name:"ＵＲ多摩永山二丁目",stationCd:"Y755",lat:35.62515,lng:139.44953},
-  {station_name:"ＵＲ多摩永山二丁目第２",stationCd:"LK45",lat:35.62604,lng:139.44927},
-];
-
-const STATIONS_FUCHU = [
-  {station_name:"エリオ駐車場",stationCd:"KB50",lat:35.674979,lng:139.483962},
-  {station_name:"タイムズ北府中",stationCd:"BP54",lat:35.682679,lng:139.471187},
-  {station_name:"タイムズ多摩川競艇場前",stationCd:"BX03",lat:35.658916,lng:139.499385},
-  {station_name:"タイムズ大國魂神社",stationCd:"BJ56",lat:35.669808,lng:139.479747},
-  {station_name:"タイムズ大國魂神社（ＥＶ）",stationCd:"RJ77",lat:35.669808,lng:139.479747},
-  {station_name:"タイムズ府中宮町第４",stationCd:"Q486",lat:35.669884,lng:139.482495},
-  {station_name:"タイムズ府中宮町第６",stationCd:"U074",lat:35.670128,lng:139.480657},
-  {station_name:"タイムズ府中宮西町第３",stationCd:"KV42",lat:35.670739,lng:139.475488},
-  {station_name:"タイムズ府中寿町第２",stationCd:"U641",lat:35.674918,lng:139.475320},
-  {station_name:"タイムズ府中小柳町第２",stationCd:"OK22",lat:35.664278,lng:139.502608},
-  {station_name:"タイムズ府中小柳町第３",stationCd:"QA10",lat:35.662024,lng:139.502427},
-  {station_name:"タイムズ府中新町１丁目",stationCd:"QB10",lat:35.687322,lng:139.487356},
-  {station_name:"タイムズ府中栄町",stationCd:"BA69",lat:35.689633,lng:139.479922},
-  {station_name:"タイムズ府中栄町第３",stationCd:"IU62",lat:35.688779,lng:139.479370},
-  {station_name:"タイムズ府中町第３",stationCd:"T864",lat:35.674777,lng:139.481244},
-  {station_name:"タイムズ府中緑町第３",stationCd:"EL20",lat:35.672004,lng:139.484468},
-  {station_name:"タイムズ府中緑町第４",stationCd:"MJ91",lat:35.671460,lng:139.486792},
-  {station_name:"タイムズ府中若松町第２",stationCd:"KE79",lat:35.673812,lng:139.498579},
-  {station_name:"タイムズ府中ＦＲＣ",stationCd:"EJ52",lat:35.670787,lng:139.477875},
-  {station_name:"タイムズ東京競馬場横",stationCd:"Y343",lat:35.662479,lng:139.491297},
-  {station_name:"タイムズ東京競馬場横第２",stationCd:"RN89",lat:35.661728,lng:139.491862},
-  {station_name:"タイムズ東府中駅前",stationCd:"BE95",lat:35.669504,lng:139.496397},
-  {station_name:"フォトレ府中",stationCd:"DP94",lat:35.672102,lng:139.475670},
-  {station_name:"マイプレイス東府中",stationCd:"IR04",lat:35.668110,lng:139.496191},
-  {station_name:"メルベーユ多磨霊園",stationCd:"LJ16",lat:35.665129,lng:139.505486},
-  {station_name:"ユーコート府中",stationCd:"CN26",lat:35.672585,lng:139.482908},
-  {station_name:"レジデンス若松一番館",stationCd:"KU17",lat:35.672820,lng:139.501841},
-  {station_name:"ヴェルト府中",stationCd:"QV05",lat:35.672478,lng:139.483006},
-  {station_name:"北府中駅前",stationCd:"OL69",lat:35.678863,lng:139.473652},
-  {station_name:"天神町１丁目",stationCd:"NH42",lat:35.678210,lng:139.488135},
-  {station_name:"天神町２丁目",stationCd:"QE33",lat:35.681208,lng:139.491883},
-  {station_name:"天神町４丁目",stationCd:"OC70",lat:35.681550,lng:139.492950},
-  {station_name:"府中八幡町２丁目",stationCd:"BW45",lat:35.670268,lng:139.487017},
-  {station_name:"府中大久保駐車場",stationCd:"BS67",lat:35.674966,lng:139.483232},
-  {station_name:"府中幸町１丁目",stationCd:"OT24",lat:35.678407,lng:139.481923},
-  {station_name:"府中是政６丁目",stationCd:"MT68",lat:35.655486,lng:139.483026},
-  {station_name:"府中栄町第４",stationCd:"QE32",lat:35.690177,lng:139.479696},
-  {station_name:"府中浅間町２丁目",stationCd:"QZ63",lat:35.683984,lng:139.497154},
-  {station_name:"府中町２丁目駐車場",stationCd:"DX27",lat:35.673969,lng:139.484253},
-  {station_name:"府中緑町１丁目",stationCd:"DB87",lat:35.671030,lng:139.486794},
-  {station_name:"府中緑町２丁目第２",stationCd:"MH17",lat:35.672586,lng:139.490149},
-  {station_name:"府中緑町２丁目第３",stationCd:"OG99",lat:35.671273,lng:139.487823},
-  {station_name:"府中若松町１丁目第２",stationCd:"MR39",lat:35.669958,lng:139.501518},
-  {station_name:"府中若松町２丁目",stationCd:"LR95",lat:35.672551,lng:139.496466},
-  {station_name:"東府中マンション",stationCd:"KR74",lat:35.669518,lng:139.496391},
-  {station_name:"清水が丘１丁目",stationCd:"QZ05",lat:35.666925,lng:139.493610},
-  {station_name:"ＭＡＸＩＶ東府中",stationCd:"LV90",lat:35.671863,lng:139.497634},
-  {station_name:"Ｔ'ｓ ｇａｒｄｅｎ府中",stationCd:"EA57",lat:35.678233,lng:139.486989},
-  {station_name:"ＵＲ府中グリーンハイツ",stationCd:"V216",lat:35.678543,lng:139.477863},
-];
-
 // ===== 状態管理 =====
 let CURRENT_AREA = 'tama';
-let STATIONS = STATIONS_TAMA.map(s => ({...s}));
+let STATIONS = []; // stationIDシート(GAS経由)から動的に構築
 let gasStationMap = new Map();
 let gMap = null;
 let markerMap = new Map(); // stationCd → marker
@@ -323,6 +224,9 @@ function renderLabels() {
 
 function applyMapData(stations) {
   stations.forEach(st => gasStationMap.set(st.stationCd, st));
+
+  // 既存ステーションを更新（座標はstationIDシート由来のGAS値を優先、
+  // GAS未取得/異常値の場合のみローカルのハードコート値にフォールバック）
   STATIONS.forEach(s => {
     const gas = gasStationMap.get(s.stationCd);
     s.status    = gas ? gas.status    : 'unknown';
@@ -330,6 +234,30 @@ function applyMapData(stations) {
     s.standby   = gas ? gas.standby   : 0;
     s.checked   = gas ? gas.checked   : 0;
     s.hasUrgent = gas ? gas.hasUrgent : false;
+    if (gas && Number.isFinite(gas.lat) && Number.isFinite(gas.lng)) {
+      s.lat = gas.lat;
+      s.lng = gas.lng;
+    }
+  });
+
+  // STATIONSはstationIDシート(GAS)から全て動的に構築される。
+  // まだSTATIONSに存在しないstationCdはここで新規追加として拾う
+  const localCds = new Set(STATIONS.map(s => s.stationCd));
+  stations.forEach(gas => {
+    if (localCds.has(gas.stationCd)) return;
+    if (!Number.isFinite(gas.lat) || !Number.isFinite(gas.lng)) return;
+    STATIONS.push({
+      station_name: gas.stationName,
+      stationCd:    gas.stationCd,
+      lat:          gas.lat,
+      lng:          gas.lng,
+      status:       gas.status    || 'unknown',
+      total:        gas.total     || 0,
+      standby:      gas.standby   || 0,
+      checked:      gas.checked   || 0,
+      hasUrgent:    gas.hasUrgent || false,
+    });
+    localCds.add(gas.stationCd);
   });
 }
 
@@ -373,9 +301,9 @@ async function switchArea(areaKey) {
   if (CURRENT_AREA === areaKey) return;
   CURRENT_AREA = areaKey;
 
+  // エリア切り替え時はSTATIONSを空にし、以降のfetchMapData/キャッシュ読込で
+  // stationIDシート(GAS)から新エリア分を構築する
   STATIONS.length = 0;
-  const src = areaKey === 'fuchu' ? STATIONS_FUCHU : STATIONS_TAMA;
-  src.forEach(s => STATIONS.push({...s}));
 
   document.querySelectorAll('.area-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.area === areaKey);
@@ -607,7 +535,19 @@ function applyScanBadges(items) {
       position: { lat: s.lat, lng: s.lng },
       icon: makeScanBadgeSvg(idx + 1),
       title: s.station_name,
-      zIndex: 50
+      zIndex: 50,
+      cursor: 'pointer'
+    });
+    // バッジはステーションマーカーの真上に重なるため、
+    // バッジタップ時は下にあるステーションマーカーのclickを
+    // そのまま発火させて詳細パネル/InfoWindowを開く
+    marker.addListener('click', () => {
+      const stationMarker = markerMap.get(s.stationCd);
+      if (stationMarker) {
+        google.maps.event.trigger(stationMarker, 'click');
+      } else {
+        openDetail(s);
+      }
     });
     scanWrappers.push(marker);
   });
