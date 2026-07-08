@@ -350,7 +350,34 @@ function updateGpsMarker(lat, lng) {
       position: { lat, lng },
       icon: makeGpsSvg(),
       title: '現在地',
-      zIndex: 100
+      zIndex: 100,
+      cursor: 'pointer'
+    });
+    // 現在地マーカーはzIndexが全マーカー中最も高いため、
+    // ステーションのピンと重なるとタップを吸収してしまう。
+    // その場合は一番近いステーションのclickを代わりに発火させる。
+    gpsMarker.addListener('click', () => {
+      const pos = gpsMarker.getPosition();
+      if (!pos) return;
+      let nearest = null;
+      let nearestDist = Infinity;
+      STATIONS.forEach(s => {
+        const dLat = s.lat - pos.lat();
+        const dLng = s.lng - pos.lng();
+        const dist = dLat * dLat + dLng * dLng;
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearest = s;
+        }
+      });
+      // 目安として約30m以内(度換算で0.0003前後)にステーションが
+      // あれば重なっていると判断し、そのマーカーのclickへ転送する
+      if (nearest && nearestDist < 0.0003 * 0.0003) {
+        const stationMarker = markerMap.get(nearest.stationCd);
+        if (stationMarker) {
+          google.maps.event.trigger(stationMarker, 'click');
+        }
+      }
     });
     animateGpsMarker();
   } else {
