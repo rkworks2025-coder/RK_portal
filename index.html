@@ -74,6 +74,26 @@
 
     </div>
 
+    <div class="portal-tma-bookmarklet-row">
+      <a href="#" id="tmaMenuBookmarklet" class="portal-tma-bookmarklet" draggable="true">
+        <i class="ti ti-apps" aria-hidden="true"></i> TMA用メニュー
+      </a>
+      <button type="button" id="tmaMenuHelpBtn" class="portal-tma-help-btn" aria-label="使い方">?</button>
+    </div>
+
+  </div>
+
+  <div id="tmaMenuHelpModal" class="modal">
+    <div class="dialog">
+      <h3>TMA用メニューの使い方</h3>
+      <p class="dialog-msg">
+        「TMA用メニュー」を長押し（PCならドラッグ）してブックマークバーに保存してください。<br><br>
+        TMAの画面を開いた状態でこのブックマークをタップすると、ポータルの各アプリへのメニューが浮かんで表示されます。TMAで何ページ進んでいても、そこから直接他のアプリに移動できます。
+      </p>
+      <div class="tma-confirm-actions">
+        <button id="tmaMenuHelpClose" class="btn">閉じる</button>
+      </div>
+    </div>
   </div>
 
   <div id="pwModal" class="modal">
@@ -128,12 +148,78 @@
       return;
     }
     updatePwBadge(mode);
+    setupTmaMenuBookmarklet(user);
 
     var btn1 = document.getElementById("pwModalMode1");
     var btn2 = document.getElementById("pwModalMode2");
     if (btn1) btn1.textContent = getPwValueFor(user.id, "mode1") || "--";
     if (btn2) btn2.textContent = getPwValueFor(user.id, "mode2") || "--";
   })();
+
+  // ===== TMA画面上にメニューを浮かせるブックマークレット =====
+  // TMAは別オリジンなので、ポータルのJSから直接操作はできない。
+  // その代わり、ブックマークレット自身が実行された「その場のページ」に
+  // メニューのボタン・ポップアップを注入する形にする。
+  // どのURL（片山用/戸島用）を使うかは、このブックマークレットを
+  // 保存する時点でのポータルのログインユーザーを元に決め打ちで埋め込む。
+  function setupTmaMenuBookmarklet(user) {
+    var link = document.getElementById("tmaMenuBookmarklet");
+    if (!link) return;
+
+    var isTojima = user && user.id === "tojima";
+    var root = "https://rkworks2025-coder.github.io/RK_portal/";
+    var items = [
+      { label: "TOP",    href: root },
+      { label: "巡回",   href: root + "junkai/" },
+      { label: "予約",   href: root + (isTojima ? "yoyaku/tjm/" : "yoyaku/") },
+      { label: "JKS",    href: root + (isTojima ? "jks/tjm/"    : "jks/") },
+      { label: "JKS II", href: root + (isTojima ? "jks2/tjm/"   : "jks2/") },
+      { label: "実績",   href: root + "jisseki/" }
+    ];
+
+    var payload = JSON.stringify(items);
+    var src = "(function(){" +
+      "if(document.getElementById('rk-tma-menu-btn')){return;}" +
+      "var items=" + payload + ";" +
+      "var style=document.createElement('style');" +
+      "style.textContent='" +
+      "#rk-tma-menu-btn{position:fixed;bottom:16px;right:16px;width:44px;height:44px;" +
+      "border-radius:50%;background:#1a1a1e;color:#fff;border:1px solid rgba(255,255,255,.3);" +
+      "font-size:20px;z-index:999999;display:flex;align-items:center;justify-content:center;" +
+      "box-shadow:0 4px 16px rgba(0,0,0,.4);cursor:pointer;}" +
+      "#rk-tma-menu-popup{position:fixed;bottom:68px;right:16px;background:#1a1a1e;" +
+      "border:1px solid rgba(255,255,255,.2);border-radius:12px;min-width:150px;" +
+      "overflow:hidden;z-index:999999;display:none;box-shadow:0 8px 24px rgba(0,0,0,.4);}" +
+      "#rk-tma-menu-popup a{display:block;padding:12px 16px;color:#eee;text-decoration:none;" +
+      "font-size:15px;border-bottom:1px solid rgba(255,255,255,.08);}" +
+      "#rk-tma-menu-popup a:last-child{border-bottom:none;}" +
+      "';" +
+      "document.head.appendChild(style);" +
+      "var btn=document.createElement('button');" +
+      "btn.id='rk-tma-menu-btn';btn.textContent='\\u22EE';" +
+      "var popup=document.createElement('div');" +
+      "popup.id='rk-tma-menu-popup';" +
+      "items.forEach(function(it){" +
+      "  var a=document.createElement('a');a.textContent=it.label;a.href=it.href;" +
+      "  popup.appendChild(a);" +
+      "});" +
+      "btn.addEventListener('click',function(){" +
+      "  popup.style.display=popup.style.display==='block'?'none':'block';" +
+      "});" +
+      "document.body.appendChild(popup);" +
+      "document.body.appendChild(btn);" +
+      "})();";
+
+    link.setAttribute("href", "javascript:" + encodeURIComponent(src));
+  }
+
+  var tmaMenuHelpModal = document.getElementById("tmaMenuHelpModal");
+  document.getElementById("tmaMenuHelpBtn").addEventListener("click", function () {
+    tmaMenuHelpModal.classList.add("show");
+  });
+  document.getElementById("tmaMenuHelpClose").addEventListener("click", function () {
+    tmaMenuHelpModal.classList.remove("show");
+  });
 
   function updatePwBadge(mode) {
     var badgeText = document.getElementById("pw-mode-badge-text");
