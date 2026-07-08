@@ -188,6 +188,41 @@ html, body {
 .portal-card-badge.badge-jks { color: var(--rk-icon-jks); background: var(--rk-tile-jks); }
 .portal-card-badge.badge-jks2 { color: var(--rk-icon-jks2); background: var(--rk-tile-jks2); }
 
+.portal-tma-bookmarklet-row {
+  padding: 0 18px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.portal-tma-bookmarklet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: var(--rk-tile-tma);
+  color: var(--rk-icon-tma);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.portal-tma-help-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--rk-bg-header-border);
+  background: transparent;
+  color: var(--rk-text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* ---------- 担当者選択画面 ---------- */
 
 .select-user-body {
