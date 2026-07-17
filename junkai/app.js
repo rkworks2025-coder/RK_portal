@@ -15,7 +15,7 @@ var Junkai = (() => {
   // 座標がズレる既知不具合があり、ポータルと同一ドメイン(scope内)では
   // リンクをタップしてもSafari別タブにならず回避できないため、
   // 別ドメインのTireCheckリポジトリに分離して運用する。
-  const TIRE_APP_URL = "https://rkworks2025-coder.github.io/TireCheck/";
+  const TIRE_APP_URL = "../tire/"; // テスト用: ポータル内tire/に一時的に変更
   const WORK_APP_URL = "../work/";
   const LS_CONFIG_KEY = "junkai:config";
   const TIMEOUT_MS = 15000;
