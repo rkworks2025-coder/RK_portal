@@ -1,7 +1,8 @@
 // ===== JKS-II app.js (Map版) =====
 
 // ===== 状態管理 =====
-let CURRENT_AREA = 'tama';
+const AREA_STORAGE_KEY = 'jks2_last_area';
+let CURRENT_AREA = localStorage.getItem(AREA_STORAGE_KEY) || 'tama';
 let STATIONS = []; // stationIDシート(GAS経由)から動的に構築
 let gasStationMap = new Map();
 let gMap = null;
@@ -47,6 +48,12 @@ const MAP_STYLES = [
 
 function initMap() {
   if (typeof requireUser === "function" && !requireUser("../select-user.html")) return;
+
+  // 前回のエリアに合わせてタブの初期状態を設定
+  document.querySelectorAll('.area-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.area === CURRENT_AREA);
+  });
+
   const center = AREA_CENTER[CURRENT_AREA];
   gMap = new google.maps.Map(document.getElementById('gmap'), {
     center, zoom: AREA_ZOOM[CURRENT_AREA],
@@ -105,6 +112,9 @@ function renderMarkers() {
   let openIW = null;
 
   STATIONS.forEach(s => {
+    // standbyが0のステーション（巡回すべき車両がいない）はマーカーを表示しない
+    if (s.standby === 0) return;
+
     const color = STATUS_COLOR[s.status] || '#445060';
     const isActive = s.status === 'standby';
     const size = isActive ? 14 : 10;
@@ -300,6 +310,7 @@ function showLoading(show) {
 async function switchArea(areaKey) {
   if (CURRENT_AREA === areaKey) return;
   CURRENT_AREA = areaKey;
+  localStorage.setItem(AREA_STORAGE_KEY, areaKey);
 
   // エリア切り替え時はSTATIONSを空にし、以降のfetchMapData/キャッシュ読込で
   // stationIDシート(GAS)から新エリア分を構築する
@@ -396,13 +407,10 @@ function animateGpsMarker() {
 }
 
 function startGps() {
-  try {
-    const cached = localStorage.getItem(GPS_CACHE_KEY);
-    if (cached) {
-      const { lat, lng } = JSON.parse(cached);
-      onGpsSuccess({ coords: { latitude: lat, longitude: lng } });
-    }
-  } catch(e) {}
+  // 起動時は常に新規GPS取得を行い、最新の現在地を反映する。
+  // キャッシュを先に表示すると「前回の現在地」が見えてしまうため、
+  // 取得完了後にのみマーカーを表示する。
+  // 取得失敗時のみキャッシュにフォールバックする。
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, { enableHighAccuracy: true, timeout: 10000 });
 }
