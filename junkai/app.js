@@ -1,31 +1,39 @@
 // 巡回アプリ app.js
-// version: s9d (チェック操作のオリジナルモーダル化)
-// version: s10 (RK_portal統合に伴いGAS_URL/TIRE_APP_URL/WORK_APP_URLを共通設定化)
+// version: s10 (今回/前回 同時管理対応)
 
 var Junkai = (() => {
 
   // ===== 設定 =====
-  // GAS_URLは shared/ss-config.js の getGasUrl() から取得する。
+  // GAS URLは shared/ss-config.js の getGasUrl() から取得する。
   // 担当者（片山/戸島）に応じて自動的に正しいURLへ切り替わるため、
   // 固定値ではなく使用直前に毎回 getGasUrlSafe() で取得する。
   function getGasUrlSafe() {
     return (typeof getGasUrl === "function" ? getGasUrl("junkai") : null);
   }
-  // タイヤ点検アプリはiOS26.5のPWA(standalone)でカスタムテンキーの
-  // 座標がズレる既知不具合があり、ポータルと同一ドメイン(scope内)では
-  // リンクをタップしてもSafari別タブにならず回避できないため、
-  // 別ドメインのTireCheckリポジトリに分離して運用する。
-  const TIRE_APP_URL = "https://rkworks2025-coder.github.io/TireCheck/";
+  // タイヤ点検・作業管理アプリはポータル内の相対パスへ変更。
+  const TIRE_APP_URL = "../tire/";
   const WORK_APP_URL = "../work/";
   const LS_CONFIG_KEY = "junkai:config";
+  const LS_ROUND_KEY = "junkai:active_round"; // "current" または "prev"
   const TIMEOUT_MS = 15000;
 
   let appConfig = []; 
 
   // ===== utility =====
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-  const LS_KEY = (c) => `junkai:city:${c}`; 
+  const LS_KEY = (c, round) => `junkai:city:${c}:${round}`;
   const LS_FILTER_KEY = (c) => `junkai:filter:${c}`;
+
+  function getActiveRound() {
+    const r = localStorage.getItem(LS_ROUND_KEY);
+    return (r === "prev") ? "prev" : "current";
+  }
+  function setActiveRound(round) {
+    localStorage.setItem(LS_ROUND_KEY, round === "prev" ? "prev" : "current");
+  }
+  function roundLabel(round) {
+    return round === "prev" ? "前回" : "今回";
+  }
 
   function getTodayJST() {
     return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Tokyo" });
@@ -86,14 +94,14 @@ var Junkai = (() => {
       }
     }
 
-    // 2. タイヤ点検アプリ(同一オリジン版)からの戻り -> 監視タイマーによるTMA自動発火
+    // 2. タイヤ点検アプリからの戻り -> 監視タイマーによるTMA自動発火
     const tireCompPlate = localStorage.getItem("junkai:tire_completed_plate");
     if (tireCompPlate) {
       localStorage.removeItem("junkai:tire_completed_plate");
       pendingTireCompletionPlate = tireCompPlate;
     }
 
-    // 3. postMessage経由(TireCheck別オリジン版)で保留中の車両があれば発火
+    // 3. 保留中の車両があれば発火
     if (pendingTireCompletionPlate) {
       const plate = pendingTireCompletionPlate;
       pendingTireCompletionPlate = null;
@@ -101,33 +109,25 @@ var Junkai = (() => {
     }
   }
 
-  // タブがバックグラウンドの間にpostMessageで届いた車両番号を保持する。
-  // (バックグラウンドタブではsetIntervalが間引かれ、リトライが
-  //  時間切れになる前にタブが表に出てこない可能性があるため、
-  //  発火はタブが表示された時(handleReturnActions経由)にのみ行う)
   let pendingTireCompletionPlate = null;
 
   // タイヤ点検完了後のTMA自動発火本体。
+  // 車両番号を正規化（全角→半角・スペース除去）して比較することで
+  // 表記ゆれによるマッチ失敗を防ぐ。
   function fireTireCompletion(tireCompPlate) {
     if (!tireCompPlate) return;
 
-    // 作業モードを確認
     const workMode = localStorage.getItem("junkai:work_mode") || "single";
     if (workMode === "continuous") return;
 
-    // 車両番号を正規化する（全角→半角、スペース除去）
-    // localStorage側(tireCompPlate)とdata-plate属性側で
-    // スペースや全角/半角の表記ゆれがある場合に備える
     function normalizePlate(str) {
       return str.normalize('NFKC').replace(/\s+/g, '');
     }
     const normalizedTarget = normalizePlate(tireCompPlate);
 
-    // ボタンが出現するまで最大3秒間(100ms x 30回)監視する
     let retryCount = 0;
     const maxRetries = 30;
     const monitorInterval = setInterval(() => {
-      // 全てのchk要素を走査し、正規化した値で一致するものを探す
       const allChks = document.querySelectorAll('input.chk[data-plate]');
       let targetChk = null;
       allChks.forEach(chk => {
@@ -141,7 +141,7 @@ var Junkai = (() => {
         if (row) {
           const tmaBtn = row.querySelector('.tma-btn');
           if (tmaBtn && !tmaBtn.disabled) {
-            clearInterval(monitorInterval); // 監視終了
+            clearInterval(monitorInterval);
             tmaBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
             setTimeout(() => tmaBtn.click(), 400);
             return;
@@ -156,12 +156,6 @@ var Junkai = (() => {
       }
     }, 100);
   }
-
-  // TireCheck(別オリジン)からのpostMessageを受信する。
-  // 注: postMessage(window.opener)はiOS Safariがtarget="_blank"を
-  // 暗黙的にnoopener扱いするため使えない。
-  // TireCheckからの戻りはURLパラメータ(tire_completed_plate/splash_img)
-  // で受け取る方式に変更し、initCity内で読み取る。
 
   window.addEventListener('pageshow', (e) => {
     if (e.persisted) {
@@ -184,7 +178,7 @@ var Junkai = (() => {
     handleAutoTire();
   });
 
-  // C: ポーリング（500ms）- completed_plateとtire_completed_plate、postMessage保留分を監視
+  // C: ポーリング（500ms）
   setInterval(() => {
     const compPlate = localStorage.getItem('junkai:completed_plate');
     const tireCompPlate = localStorage.getItem('junkai:tire_completed_plate');
@@ -357,13 +351,13 @@ var Junkai = (() => {
     });
   }
 
-  function saveCity(city, arr) {
-    localStorage.setItem(LS_KEY(city), JSON.stringify(arr));
+  function saveCity(city, arr, round) {
+    localStorage.setItem(LS_KEY(city, round), JSON.stringify(arr));
   }
 
-  function readCity(city) {
+  function readCity(city, round) {
     try {
-      const s = localStorage.getItem(LS_KEY(city));
+      const s = localStorage.getItem(LS_KEY(city, round));
       if (!s) return [];
       const a = JSON.parse(s);
       return Array.isArray(a) ? a : [];
@@ -409,11 +403,12 @@ var Junkai = (() => {
   }
 
   function repaintCounters() {
+    const round = getActiveRound();
     let overallTotal = 0, overallDone = 0, overallStop = 0, overallSkip = 0;
     appConfig.forEach(cfg => {
       const city = cfg.name; 
       const slug = cfg.slug; 
-      const arr = readCity(city);
+      const arr = readCity(city, round);
       const cnt = countCity(arr);
       overallTotal += cnt.total;
       overallDone += cnt.done;
@@ -438,11 +433,11 @@ var Junkai = (() => {
     if (allTotalEl) allTotalEl.textContent = overallTotal;
     if (allRemEl)   allRemEl.textContent   = (overallTotal - overallDone - overallSkip);
     const hint = document.getElementById("overallHint");
-    if (hint) hint.textContent = overallTotal > 0 ? `総件数：${overallTotal}` : "同期してください";
+    if (hint) hint.textContent = overallTotal > 0 ? `総件数：${overallTotal}（${roundLabel(round)}）` : "同期してください";
   }
 
   async function execPullLog() {
-    const ok = confirm("【Pull】inspectionlogの内容をアプリに反映しますか？");
+    const ok = confirm("【Pull】inspectionlogの内容をアプリに反映しますか？（今回・前回とも反映されます）");
     if (!ok) return;
     try {
       showProgress(true, 10);
@@ -454,48 +449,51 @@ var Junkai = (() => {
       statusText("データ反映中...");
       const logRows = json.rows;
       let updatedCount = 0, addedCount = 0, deletedCount = 0; 
-      for (const cfg of appConfig) {
-        let cityData = readCity(cfg.name);
-        let isCityModified = false;
-        const cityLogs = logRows.filter(r => r.city === cfg.name);
-        const validPlates = cityLogs.map(r => r.plate);
-        const preCount = cityData.length;
-        cityData = cityData.filter(localRow => validPlates.includes(localRow.plate));
-        if (preCount !== cityData.length) {
-           deletedCount += (preCount - cityData.length);
-           isCityModified = true;
-        }
-        cityLogs.forEach(logRow => {
-          const targetRow = cityData.find(r => r.plate === logRow.plate);
-          let newChecked = false, newStatus = ""; 
-          const s = (logRow.status || "").toLowerCase();
-          if (s === "checked" || s === "完了" || s === "済") newChecked = true;
-          else if (s === "stop" || s === "stopped" || s === "停止") newStatus = "stop";
-          else if (s === "skip" || s === "unnecessary" || s === "不要") newStatus = "skip";
-          else if (s === "7days_rule") newStatus = "7days_rule"; 
-          let newDate = logRow.date ? logRow.date.slice(0, 10) : "";
-          if (targetRow) {
-            if (targetRow.checked !== newChecked || targetRow.status !== newStatus || targetRow.last_inspected_at !== newDate) {
-                targetRow.checked = newChecked;
-                targetRow.status = newStatus;
-                targetRow.last_inspected_at = newDate;
-                isCityModified = true;
-                updatedCount++;
-            }
-          } else {
-            const newRec = {
-              city: cfg.name, station: logRow.station, model: logRow.model, plate: logRow.plate,
-              note: "", operator:"", status: newStatus, checked: newChecked, last_inspected_at: newDate,
-              ui_index: logRow.ui_index || "", ui_index_num: 999 
-            };
-            cityData.push(normalizeRow(newRec));
-            isCityModified = true;
-            addedCount++;
+      for (const roundTag of ["current", "prev"]) {
+        const roundRows = logRows.filter(r => (r.round || "current") === roundTag);
+        for (const cfg of appConfig) {
+          let cityData = readCity(cfg.name, roundTag);
+          let isCityModified = false;
+          const cityLogs = roundRows.filter(r => r.city === cfg.name);
+          const validPlates = cityLogs.map(r => r.plate);
+          const preCount = cityData.length;
+          cityData = cityData.filter(localRow => validPlates.includes(localRow.plate));
+          if (preCount !== cityData.length) {
+             deletedCount += (preCount - cityData.length);
+             isCityModified = true;
           }
-        });
-        if (isCityModified) {
-          applyUIIndex(cfg.name, cityData);
-          saveCity(cfg.name, cityData);
+          cityLogs.forEach(logRow => {
+            const targetRow = cityData.find(r => r.plate === logRow.plate);
+            let newChecked = false, newStatus = ""; 
+            const s = (logRow.status || "").toLowerCase();
+            if (s === "checked" || s === "完了" || s === "済") newChecked = true;
+            else if (s === "stop" || s === "stopped" || s === "停止") newStatus = "stop";
+            else if (s === "skip" || s === "unnecessary" || s === "不要") newStatus = "skip";
+            else if (s === "7days_rule") newStatus = "7days_rule"; 
+            let newDate = logRow.date ? logRow.date.slice(0, 10) : "";
+            if (targetRow) {
+              if (targetRow.checked !== newChecked || targetRow.status !== newStatus || targetRow.last_inspected_at !== newDate) {
+                  targetRow.checked = newChecked;
+                  targetRow.status = newStatus;
+                  targetRow.last_inspected_at = newDate;
+                  isCityModified = true;
+                  updatedCount++;
+              }
+            } else {
+              const newRec = {
+                city: cfg.name, station: logRow.station, model: logRow.model, plate: logRow.plate,
+                note: "", operator:"", status: newStatus, checked: newChecked, last_inspected_at: newDate,
+                ui_index: logRow.ui_index || "", ui_index_num: 999 
+              };
+              cityData.push(normalizeRow(newRec));
+              isCityModified = true;
+              addedCount++;
+            }
+          });
+          if (isCityModified) {
+            applyUIIndex(cfg.name, cityData);
+            saveCity(cfg.name, cityData, roundTag);
+          }
         }
       }
       repaintCounters();
@@ -518,6 +516,14 @@ var Junkai = (() => {
       workModeSelect.value = savedMode;
       workModeSelect.addEventListener("change", (e) => localStorage.setItem("junkai:work_mode", e.target.value));
     }
+    const roundSelect = document.getElementById("roundSwitchSelect");
+    if (roundSelect) {
+      roundSelect.value = getActiveRound();
+      roundSelect.addEventListener("change", (e) => {
+        setActiveRound(e.target.value);
+        repaintCounters();
+      });
+    }
     if(document.getElementById("city-list-container")) {
        renderIndexButtons();
        repaintCounters();
@@ -526,13 +532,13 @@ var Junkai = (() => {
     const btn = document.getElementById("syncBtn");
     if (btn) {
       btn.addEventListener("click", async () => {
-        if (!confirm("【注意】初期同期を実行します。よろしいですか?")) return;
+        if (!confirm("【注意】初期同期を実行します。よろしいですか?（今回分・前回分とも作り直し、inspectionlogにも自動反映します）")) return;
         try {
           showProgress(true, 5);
           statusText("設定ファイル更新中…");
           await fetchRemoteConfig();
-          // 全エリアのローカルデータをクリア（stopエリアの残存データも含めて一掃）
-          appConfig.forEach(cfg => localStorage.removeItem(LS_KEY(cfg.name)));
+          // 今回分のローカルデータのみクリア（前回分には触れない）
+          appConfig.forEach(cfg => localStorage.removeItem(LS_KEY(cfg.name, "current")));
           // stopエリアのフィルタ設定もクリア
           appConfig.forEach(cfg => {
             const s = (cfg.status || "").trim();
@@ -555,12 +561,35 @@ var Junkai = (() => {
             const arr = buckets[cfg.name];
             if (arr && arr.length > 0) {
               applyUIIndex(cfg.name, arr);
-              saveCity(cfg.name, arr);
+              saveCity(cfg.name, arr, "current");
               wrote++;
             }
           }
+          // 前回分も同様に全体管理から作り直す。チェック済み等の状態は
+          // このあとPullを実行すればinspectionlogから復元されるため、
+          // ここでは今回分と同じく単純に作り直してよい。
+          if (Array.isArray(json.prevRows) && json.prevRows.length > 0) {
+            appConfig.forEach(cfg => localStorage.removeItem(LS_KEY(cfg.name, "prev")));
+            const prevBuckets = {};
+            appConfig.forEach(cfg => prevBuckets[cfg.name] = []);
+            for (const r of json.prevRows) {
+              const norm = normalizeRow(r);
+              if (prevBuckets[norm.city]) prevBuckets[norm.city].push(norm);
+            }
+            for (const cfg of appConfig) {
+              const arr = prevBuckets[cfg.name];
+              if (arr && arr.length > 0) {
+                applyUIIndex(cfg.name, arr);
+                saveCity(cfg.name, arr, "prev");
+              }
+            }
+          }
           renderIndexButtons(); repaintCounters();
-          showProgress(true, 100); statusText("同期完了");
+          statusText("サーバー側の作業記録を復元中…");
+          await mergeLogNonDestructive();
+          statusText("同期データをinspectionlogへ反映中…");
+          await syncInspectionAll();
+          showProgress(true, 100); statusText("同期完了（inspectionlogにも反映済み）");
         } catch (e) {
           statusText("同期失敗：" + e.message);
         } finally { setTimeout(() => showProgress(false), 400); }
@@ -573,15 +602,61 @@ var Junkai = (() => {
     }
   }
 
+  /**
+   * inspectionlogから既存の作業記録（チェック済み・ステータス・日付）だけを
+   * 復元する。execPullLogと違い、無い分の削除や新規追加は一切行わない
+   * （同期直後、サーバー側の実際の状態を壊さずにローカルへ反映するための処理）。
+   * inspectionlogがまだ空（新規ラウンド立ち上げ時）の場合は何も起きない。
+   */
+  async function mergeLogNonDestructive() {
+    try {
+      const url = `${getGasUrlSafe()}?action=pullLog&_=${Date.now()}`;
+      const json = await fetchJSONWithRetry(url, 2);
+      if (!json || !json.ok || !Array.isArray(json.rows)) return;
+      const logRows = json.rows;
+      for (const roundTag of ["current", "prev"]) {
+        const roundRows = logRows.filter(r => (r.round || "current") === roundTag);
+        for (const cfg of appConfig) {
+          const cityData = readCity(cfg.name, roundTag);
+          if (cityData.length === 0) continue;
+          let isCityModified = false;
+          const cityLogs = roundRows.filter(r => r.city === cfg.name);
+          cityLogs.forEach(logRow => {
+            const targetRow = cityData.find(r => r.plate === logRow.plate);
+            if (!targetRow) return; // 新規追加・削除はしない
+            let newChecked = false, newStatus = "";
+            const s = (logRow.status || "").toLowerCase();
+            if (s === "checked" || s === "完了" || s === "済") newChecked = true;
+            else if (s === "stop" || s === "stopped" || s === "停止") newStatus = "stop";
+            else if (s === "skip" || s === "unnecessary" || s === "不要") newStatus = "skip";
+            else if (s === "7days_rule") newStatus = "7days_rule";
+            const newDate = logRow.date ? logRow.date.slice(0, 10) : "";
+            if (targetRow.checked !== newChecked || targetRow.status !== newStatus || targetRow.last_inspected_at !== newDate) {
+              targetRow.checked = newChecked;
+              targetRow.status = newStatus;
+              targetRow.last_inspected_at = newDate;
+              isCityModified = true;
+            }
+          });
+          if (isCityModified) saveCity(cfg.name, cityData, roundTag);
+        }
+      }
+    } catch (e) {
+      console.warn("mergeLogNonDestructive failed", e);
+    }
+  }
+
   async function syncInspectionAll() {
     const all = [];
-    appConfig.forEach(cfg => {
-      // status が空または "help" のエリアのみプッシュ対象（stopエリアは除外）
-      const s = (cfg.status || "").trim();
-      if (s !== "" && s !== "help") return;
-      const arr = readCity(cfg.name);
-      for (const rec of arr) all.push(rec);
-    });
+    for (const round of ["current", "prev"]) {
+      appConfig.forEach(cfg => {
+        // status が空または "help" のエリアのみプッシュ対象（stopエリアは除外）
+        const s = (cfg.status || "").trim();
+        if (s !== "" && s !== "help") return;
+        const arr = readCity(cfg.name, round);
+        for (const rec of arr) all.push(Object.assign({}, rec, { round }));
+      });
+    }
     try {
       const h=document.getElementById("hint");
       if(h) h.textContent="送信中...";
@@ -603,36 +678,16 @@ var Junkai = (() => {
     return "bg-green";
   }
 
-  function persistCityRec(city, rec) {
-    const arr = readCity(city);
+  function persistCityRec(city, rec, round) {
+    const arr = readCity(city, round);
     const idx = arr.findIndex(r => r.ui_index === rec.ui_index);
     if (idx === -1) return;
     arr[idx] = rec;
-    saveCity(city, arr);
+    saveCity(city, arr, round);
     repaintCounters();
   }
 
   async function initCity(cityKey) {
-    // TireCheck(別オリジン)の「巡回アプリに戻る」からの遷移を、
-    // URLパラメータ経由で受け取る。
-    const returnParams = new URLSearchParams(location.search);
-    const tireCompletedPlate = returnParams.get('tire_completed_plate');
-    const splashImg = returnParams.get('splash_img');
-    if (splashImg) {
-      localStorage.setItem("junkai:preloaded_splash_url", splashImg);
-    }
-    if (tireCompletedPlate) {
-      pendingTireCompletionPlate = tireCompletedPlate;
-    }
-    if (tireCompletedPlate || splashImg) {
-      // URLにパラメータを残さない（再読み込み・共有時の誤動作防止）
-      returnParams.delete('tire_completed_plate');
-      returnParams.delete('splash_img');
-      const cleanQuery = returnParams.toString();
-      const cleanUrl = location.pathname + (cleanQuery ? '?' + cleanQuery : '');
-      history.replaceState(null, '', cleanUrl);
-    }
-
     loadLocalConfig(); 
     let cityName = cityKey;
     let targetCfg = appConfig.find(c => c.name === cityKey) || appConfig.find(c => c.slug === cityKey);
@@ -642,10 +697,11 @@ var Junkai = (() => {
     } else {
        cityName = targetCfg.name;
     }
+    const round = getActiveRound();
     const pageTitle = document.getElementById("pageTitle");
     const headerTitle = document.getElementById("headerTitle");
-    if (pageTitle) pageTitle.textContent = targetCfg.name;
-    if (headerTitle) headerTitle.textContent = targetCfg.name;
+    if (pageTitle) pageTitle.textContent = `${targetCfg.name}（${roundLabel(round)}）`;
+    if (headerTitle) headerTitle.textContent = `${targetCfg.name}（${roundLabel(round)}）`;
 
     const list = document.getElementById("list");
     const hint = document.getElementById("hint");
@@ -661,7 +717,7 @@ var Junkai = (() => {
     }
 
     function renderList() {
-      const arr = readCity(cityName);
+      const arr = readCity(cityName, round);
       list.innerHTML = "";
       if (arr.length === 0) { hint.textContent = "データなし"; return; }
       const filteredArr = arr.filter(rec => matchesFilter(rec, currentFilter));
@@ -724,7 +780,7 @@ var Junkai = (() => {
             rec.checked = chk.checked;
             rec.last_inspected_at = chk.checked ? getTodayJST() : "";
             row.className = `row ${rowBg(rec)}`;
-            persistCityRec(cityName, rec); syncInspectionAll(); renderList(); 
+            persistCityRec(cityName, rec, round); syncInspectionAll(); renderList(); 
           }
         });
 
@@ -744,7 +800,7 @@ var Junkai = (() => {
         }
         sel.addEventListener("change", () => {
           rec.status = sel.value; row.className = `row ${rowBg(rec)}`;
-          persistCityRec(cityName, rec); syncInspectionAll(); renderList(); 
+          persistCityRec(cityName, rec, round); syncInspectionAll(); renderList(); 
         });
         const btnGroup = document.createElement("div"); btnGroup.className = "btn-group";
         const tmaBtn = document.createElement("button"); tmaBtn.className = "tma-btn"; tmaBtn.textContent = "TMA";
@@ -785,23 +841,15 @@ var Junkai = (() => {
             location.href = `${WORK_APP_URL}?${params.toString()}`;
           }
         });
-        // iOS PWA(standalone)では window.open() を呼んでも別タブ(Safari)にならず
-        // 同じstandaloneウィンドウ内で遷移してしまうため、確実に別タブで開くには
-        // <a target="_blank"> をユーザーが直接タップする形にする必要がある。
-        // TireCheckは別ドメインのためポータルのlocalStorage(担当者情報)を
-        // 直接読めないので、operatorパラメータとしてURLに含めて渡す。
-        // 戻り先(city等のパラメータを含む現在のURL)もreturn_urlとして渡す。
-        const tireOperator = (typeof getCurrentUser === "function" && getCurrentUser()) ? getCurrentUser().id : "katayama";
-        const tireParams = new URLSearchParams({ station: rec.station || "", model: rec.model || "", plate_full: rec.plate || "", operator: tireOperator, return_url: location.href });
-        const tireBtn = document.createElement("a"); tireBtn.className = "tire-btn"; tireBtn.textContent = "点検";
-        tireBtn.href = `${TIRE_APP_URL}?${tireParams.toString()}`;
-        tireBtn.target = "_blank";
+        const tireBtn = document.createElement("button"); tireBtn.className = "tire-btn"; tireBtn.textContent = "点検";
         tireBtn.dataset.tirePlate = rec.plate || "";
         tireBtn.addEventListener("click", () => {
           // JKS-II経由の場合のlocalStorageをクリア（ループ防止）
           localStorage.removeItem('junkai:auto_tire_plate');
           localStorage.removeItem('junkai:auto_tire_station');
           localStorage.removeItem('junkai:auto_tire_model');
+          const params = new URLSearchParams({ station: rec.station || "", model: rec.model || "", plate_full: rec.plate || "" });
+          location.href = `${TIRE_APP_URL}?${params.toString()}`;
         });
         btnGroup.appendChild(tmaBtn); btnGroup.appendChild(tireBtn);
         right.appendChild(sel); right.appendChild(btnGroup);
@@ -838,13 +886,51 @@ var Junkai = (() => {
       document.getElementById("filterCancel").addEventListener("click", () => filterModal.classList.remove("show"));
     }
 
+    const addVehicleBtn = document.getElementById("addVehicleBtn");
+    const addVehicleModal = document.getElementById("addVehicleModal");
+    if (addVehicleBtn && addVehicleModal) {
+      addVehicleBtn.addEventListener("click", () => {
+        document.getElementById("addVehicleStation").value = "";
+        document.getElementById("addVehicleModel").value = "";
+        document.getElementById("addVehiclePlate").value = "";
+        addVehicleModal.classList.add("show");
+      });
+      const addVehicleCancel = document.getElementById("addVehicleCancel");
+      if (addVehicleCancel) {
+        addVehicleCancel.addEventListener("click", () => addVehicleModal.classList.remove("show"));
+      }
+      const addVehicleOk = document.getElementById("addVehicleOk");
+      if (addVehicleOk) {
+        addVehicleOk.addEventListener("click", () => {
+          const station = (document.getElementById("addVehicleStation").value || "").trim();
+          const model = (document.getElementById("addVehicleModel").value || "").trim();
+          const plate = (document.getElementById("addVehiclePlate").value || "").trim();
+          if (!plate) { alert("プレート番号は必須です"); return; }
+          const arr = readCity(cityName, round);
+          if (arr.some(r => r.plate === plate)) {
+            alert(`【${plate}】は既にリストに存在します`);
+            return;
+          }
+          const newRec = normalizeRow({
+            city: cityName, station: station, model: model, plate: plate,
+            note: "", operator: "", status: "", checked: false, last_inspected_at: "",
+            ui_index: "", ui_index_num: arr.length + 1
+          });
+          arr.push(newRec);
+          applyUIIndex(cityName, arr);
+          saveCity(cityName, arr, round);
+          syncInspectionAll();
+          addVehicleModal.classList.remove("show");
+          renderList();
+        });
+      }
+    }
+
     updateFilterButton();
     renderList();
   }
 
   async function initAreaPage() {
-    // 担当者が未選択ならポータルの選択画面へ戻す（RK_portal統合対応）
-    if (typeof requireUser === "function" && !requireUser("../select-user.html")) return;
     const params = new URLSearchParams(window.location.search);
     const cityKey = params.get('city');
     if (!cityKey) {
