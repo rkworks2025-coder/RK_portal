@@ -1,7 +1,8 @@
 // ===== JKS-II app.js (Map版) =====
 
 // ===== 状態管理 =====
-let CURRENT_AREA = 'yamato';
+const AREA_STORAGE_KEY = 'jks2_last_area_tjm';
+let CURRENT_AREA = localStorage.getItem(AREA_STORAGE_KEY) || 'yamato';
 let STATIONS = []; // stationIDシート(GAS経由)から動的に構築
 let gasStationMap = new Map();
 let gMap = null;
@@ -48,6 +49,12 @@ const MAP_STYLES = [
 
 function initMap() {
   if (typeof requireUser === "function" && !requireUser("../../select-user.html")) return;
+
+  // 前回のエリアに合わせてタブの初期状態を設定
+  document.querySelectorAll('.area-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.area === CURRENT_AREA);
+  });
+
   const center = AREA_CENTER[CURRENT_AREA];
   gMap = new google.maps.Map(document.getElementById('gmap'), {
     center, zoom: AREA_ZOOM[CURRENT_AREA],
@@ -106,6 +113,10 @@ function renderMarkers() {
   let openIW = null;
 
   STATIONS.forEach(s => {
+    // 作業不可のステーションはマーカーを表示しない
+    // standbyが0、またはstatus自体が作業不可を示す場合は除外
+    if (!s.standby || s.status === '7days_rule' || s.status === 'checked' || s.status === 'unnecessary' || s.status === 'unknown') return;
+
     const color = STATUS_COLOR[s.status] || '#445060';
     const isActive = s.status === 'standby';
     const size = isActive ? 14 : 10;
@@ -214,7 +225,8 @@ function renderLabels() {
   clearLabels();
   if (!StationLabel) return;
   STATIONS.forEach(s => {
-    if (s.status === 'checked' || s.status === 'unnecessary') return;
+    // renderMarkersと同じ条件で除外（非表示のステーションにはラベルも出さない）
+    if (!s.standby || s.status === '7days_rule' || s.status === 'checked' || s.status === 'unnecessary' || s.status === 'unknown') return;
     const color = STATUS_COLOR[s.status] || '#445060';
     const label = new StationLabel(s, color);
     label.setMap(gMap);
@@ -231,9 +243,9 @@ function applyMapData(stations) {
   STATIONS.forEach(s => {
     const gas = gasStationMap.get(s.stationCd);
     s.status    = gas ? gas.status    : 'unknown';
-    s.total     = gas ? gas.total     : 0;
-    s.standby   = gas ? gas.standby   : 0;
-    s.checked   = gas ? gas.checked   : 0;
+    s.total     = gas ? Number(gas.total   || 0) : 0;
+    s.standby   = gas ? Number(gas.standby || 0) : 0;
+    s.checked   = gas ? Number(gas.checked || 0) : 0;
     s.hasUrgent = gas ? gas.hasUrgent : false;
     if (gas && Number.isFinite(gas.lat) && Number.isFinite(gas.lng)) {
       s.lat = gas.lat;
@@ -253,9 +265,9 @@ function applyMapData(stations) {
       lat:          gas.lat,
       lng:          gas.lng,
       status:       gas.status    || 'unknown',
-      total:        gas.total     || 0,
-      standby:      gas.standby   || 0,
-      checked:      gas.checked   || 0,
+      total:        Number(gas.total   || 0),
+      standby:      Number(gas.standby || 0),
+      checked:      Number(gas.checked || 0),
       hasUrgent:    gas.hasUrgent || false,
     });
     localCds.add(gas.stationCd);
@@ -284,13 +296,14 @@ async function fetchMapData(silent = false) {
     try { localStorage.setItem(MAP_CACHE_KEY + '_' + AREA_KEY(), JSON.stringify({ stations: data.stations, ts: Date.now() })); } catch(e) {}
     gasStationMap = new Map();
     applyMapData(data.stations);
+    renderMarkers();
+    showLoading(false);
   } catch(err) {
     console.error('データ取得失敗:', err);
-    STATIONS.forEach(s => { s.status = 'standby'; s.total = 0; });
+    STATIONS.forEach(s => { s.status = 'standby'; s.standby = 1; s.total = 0; });
+    renderMarkers();
+    showLoading(false);
   }
-
-  renderMarkers();
-  showLoading(false);
 }
 
 function showLoading(show) {
@@ -301,6 +314,7 @@ function showLoading(show) {
 async function switchArea(areaKey) {
   if (CURRENT_AREA === areaKey) return;
   CURRENT_AREA = areaKey;
+  localStorage.setItem(AREA_STORAGE_KEY, areaKey);
 
   // エリア切り替え時はSTATIONSを空にし、以降のfetchMapData/キャッシュ読込で
   // stationIDシート(GAS)から新エリア分を構築する
@@ -397,13 +411,10 @@ function animateGpsMarker() {
 }
 
 function startGps() {
-  try {
-    const cached = localStorage.getItem(GPS_CACHE_KEY);
-    if (cached) {
-      const { lat, lng } = JSON.parse(cached);
-      onGpsSuccess({ coords: { latitude: lat, longitude: lng } });
-    }
-  } catch(e) {}
+  // 起動時は常に新規GPS取得を行い、最新の現在地を反映する。
+  // キャッシュを先に表示すると「前回の現在地」が見えてしまうため、
+  // 取得完了後にのみマーカーを表示する。
+  // 取得失敗時のみキャッシュにフォールバックする。
   if (!navigator.geolocation) return;
   navigator.geolocation.getCurrentPosition(onGpsSuccess, onGpsError, { enableHighAccuracy: true, timeout: 10000 });
 }
