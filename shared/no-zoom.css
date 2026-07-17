@@ -13,3 +13,9 @@ html {
 body {
   touch-action: manipulation;
 }
+
+/* 地図要素はGoogle Mapsのジェスチャー（ダブルタップ後スワイプズーム等）を
+   妨げないよう、touch-actionを上書きする */
+#gmap {
+  touch-action: auto;
+}
