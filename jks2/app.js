@@ -114,7 +114,7 @@ function renderMarkers() {
   STATIONS.forEach(s => {
     // standbyが0のステーション（作業不可）はマーカーを表示しない
     // （checked/unnecessary/7days_rule はいずれも現時点で作業できない状態）
-    if (s.standby === 0) return;
+    if (!s.standby) return;
 
     const color = STATUS_COLOR[s.status] || '#445060';
     const isActive = s.status === 'standby';
@@ -241,9 +241,9 @@ function applyMapData(stations) {
   STATIONS.forEach(s => {
     const gas = gasStationMap.get(s.stationCd);
     s.status    = gas ? gas.status    : 'unknown';
-    s.total     = gas ? gas.total     : 0;
-    s.standby   = gas ? gas.standby   : 0;
-    s.checked   = gas ? gas.checked   : 0;
+    s.total     = gas ? Number(gas.total   || 0) : 0;
+    s.standby   = gas ? Number(gas.standby || 0) : 0;
+    s.checked   = gas ? Number(gas.checked || 0) : 0;
     s.hasUrgent = gas ? gas.hasUrgent : false;
     if (gas && Number.isFinite(gas.lat) && Number.isFinite(gas.lng)) {
       s.lat = gas.lat;
@@ -263,9 +263,9 @@ function applyMapData(stations) {
       lat:          gas.lat,
       lng:          gas.lng,
       status:       gas.status    || 'unknown',
-      total:        gas.total     || 0,
-      standby:      gas.standby   || 0,
-      checked:      gas.checked   || 0,
+      total:        Number(gas.total   || 0),
+      standby:      Number(gas.standby || 0),
+      checked:      Number(gas.checked || 0),
       hasUrgent:    gas.hasUrgent || false,
     });
     localCds.add(gas.stationCd);
