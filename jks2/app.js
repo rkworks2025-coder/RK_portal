@@ -112,7 +112,8 @@ function renderMarkers() {
   let openIW = null;
 
   STATIONS.forEach(s => {
-    // standbyが0のステーション（巡回すべき車両がいない）はマーカーを表示しない
+    // standbyが0のステーション（作業不可）はマーカーを表示しない
+    // （checked/unnecessary/7days_rule はいずれも現時点で作業できない状態）
     if (s.standby === 0) return;
 
     const color = STATUS_COLOR[s.status] || '#445060';
