@@ -15,7 +15,7 @@ var Junkai = (() => {
   // 座標がズレる既知不具合があり、ポータルと同一ドメイン(scope内)では
   // リンクをタップしてもSafari別タブにならず回避できないため、
   // 別ドメインのTireCheckリポジトリに分離して運用する。
-  const TIRE_APP_URL = "../tire/";
+  const TIRE_APP_URL = "https://rkworks2025-coder.github.io/TireCheck/";
   const WORK_APP_URL = "../work/";
   const LS_CONFIG_KEY = "junkai:config";
   const TIMEOUT_MS = 15000;
@@ -115,11 +115,27 @@ var Junkai = (() => {
     const workMode = localStorage.getItem("junkai:work_mode") || "single";
     if (workMode === "continuous") return;
 
+    // 車両番号を正規化する（全角→半角、スペース除去）
+    // localStorage側(tireCompPlate)とdata-plate属性側で
+    // スペースや全角/半角の表記ゆれがある場合に備える
+    function normalizePlate(str) {
+      return str.normalize('NFKC').replace(/\s+/g, '');
+    }
+    const normalizedTarget = normalizePlate(tireCompPlate);
+
     // ボタンが出現するまで最大3秒間(100ms x 30回)監視する
     let retryCount = 0;
     const maxRetries = 30;
     const monitorInterval = setInterval(() => {
-      const targetChk = document.querySelector(`input.chk[data-plate="${tireCompPlate}"]`);
+      // 全てのchk要素を走査し、正規化した値で一致するものを探す
+      const allChks = document.querySelectorAll('input.chk[data-plate]');
+      let targetChk = null;
+      allChks.forEach(chk => {
+        if (normalizePlate(chk.dataset.plate || '') === normalizedTarget) {
+          targetChk = chk;
+        }
+      });
+
       if (targetChk) {
         const row = targetChk.closest('.row');
         if (row) {
@@ -136,7 +152,7 @@ var Junkai = (() => {
       retryCount++;
       if (retryCount >= maxRetries) {
         clearInterval(monitorInterval);
-        console.warn("TMA auto-fire failed: element not found or hidden by filter.");
+        console.warn("TMA auto-fire failed: element not found or hidden by filter.", tireCompPlate);
       }
     }, 100);
   }
