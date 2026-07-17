@@ -224,7 +224,8 @@ function renderLabels() {
   clearLabels();
   if (!StationLabel) return;
   STATIONS.forEach(s => {
-    if (s.status === 'checked' || s.status === 'unnecessary') return;
+    // renderMarkersと同じ条件で除外（非表示のステーションにはラベルも出さない）
+    if (!s.standby || s.status === '7days_rule' || s.status === 'checked' || s.status === 'unnecessary' || s.status === 'unknown') return;
     const color = STATUS_COLOR[s.status] || '#445060';
     const label = new StationLabel(s, color);
     label.setMap(gMap);
@@ -298,11 +299,10 @@ async function fetchMapData(silent = false) {
     showLoading(false);
   } catch(err) {
     console.error('データ取得失敗:', err);
-    STATIONS.forEach(s => { s.status = 'standby'; s.total = 0; });
+    STATIONS.forEach(s => { s.status = 'standby'; s.standby = 1; s.total = 0; });
+    renderMarkers();
+    showLoading(false);
   }
-
-  renderMarkers();
-  showLoading(false);
 }
 
 function showLoading(show) {
