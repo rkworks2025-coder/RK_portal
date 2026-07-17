@@ -294,6 +294,8 @@ async function fetchMapData(silent = false) {
     try { localStorage.setItem(MAP_CACHE_KEY + '_' + AREA_KEY(), JSON.stringify({ stations: data.stations, ts: Date.now() })); } catch(e) {}
     gasStationMap = new Map();
     applyMapData(data.stations);
+    renderMarkers();
+    showLoading(false);
   } catch(err) {
     console.error('データ取得失敗:', err);
     STATIONS.forEach(s => { s.status = 'standby'; s.total = 0; });
