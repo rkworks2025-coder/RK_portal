@@ -21,7 +21,6 @@
   const resHeader  = document.getElementById('res_header');
   const resLines   = document.getElementById('res_lines');
   const backBtn    = document.getElementById('backBtn');
-  const closeTabBtn = document.getElementById('closeTabBtn');
   const keypad = document.getElementById('customKeypad');
   const mainWrap = document.getElementById('mainWrap');
 
@@ -388,19 +387,12 @@
         mainWrap.style.transform = 'translateY(0)';
         form.style.display = 'none'; 
         resultCard.style.display = 'block'; 
-        if(closeTabBtn) closeTabBtn.style.display = openedFromJunkai ? 'block' : 'none';
         window.scrollTo({top:0});
         
         await postToSheet();
       });
     }
     if(backBtn) backBtn.addEventListener('click', () => { resultCard.style.display = 'none'; form.style.display = 'block'; window.scrollTo({top:0}); });
-    if(closeTabBtn) closeTabBtn.addEventListener('click', () => {
-      // window.openで別タブとして開かれている前提なので、
-      // ここを閉じれば自動的に元の巡回アプリ(standalone)に戻る。
-      // (window.openで開いていない場合はclose()が無視されるだけで実害はない)
-      window.close();
-    });
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init, {once:true});
