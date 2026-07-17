@@ -99,12 +99,6 @@
     return isSplit && isTojima ? `${base}tjm/` : base;
   }
 
-  // TMA本体（作業画面）。セッションが生きていればこのまま開き、
-  // 切れていればTMA側が自動でログイン画面にリダイレクトする。
-  // 常にログイン画面を経由させると、セッションが有効な時にも
-  // 無駄なログイン操作が挟まってしまうため。
-  const TMA_MAIN_URL = "https://dailycheck.tc-extsys.jp/tcrappsweb/web/tawTop.html";
-
   function buildMenuItems() {
     return [
       { label: "TOP",    href: PORTAL_ROOT },
@@ -112,8 +106,7 @@
       { label: "予約",   href: resolveHref(`${PORTAL_ROOT}yoyaku/`, true) },
       { label: "JKS",    href: resolveHref(`${PORTAL_ROOT}jks/`, true) },
       { label: "JKS II", href: resolveHref(`${PORTAL_ROOT}jks2/`, true) },
-      { label: "実績",   href: `${PORTAL_ROOT}jisseki/` },
-      { label: "TMA",    href: TMA_MAIN_URL }
+      { label: "実績",   href: `${PORTAL_ROOT}jisseki/` }
     ];
   }
 
