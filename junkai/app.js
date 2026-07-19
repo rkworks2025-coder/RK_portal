@@ -669,8 +669,12 @@ var Junkai = (() => {
       if(h) h.textContent="送信中...";
       await fetch(`${getGasUrlSafe()}?action=syncInspection`, { method: "POST", body: JSON.stringify({ data: all }) });
       // PUSH完了後にサイレントPULLを実行し、GAS側の最新判定（7days_rule等）を反映する
-      await executePullLog(true);
-      renderList();
+      try {
+        await executePullLog(true);
+        renderList();
+      } catch(e) {
+        console.warn('自動PULL失敗:', e);
+      }
       if(h) {
         h.textContent="送信成功";
         setTimeout(()=>h.textContent=`件数：${all.length}`, 1500);
