@@ -101,6 +101,8 @@ var Junkai = (() => {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') autoPullIfNeeded();
   });
+  window.addEventListener('pageshow', () => autoPullIfNeeded());
+  window.addEventListener('focus', () => autoPullIfNeeded());
 
   // ===== 戻り時の自動アクション (強化版) =====
   function handleReturnActions() {
