@@ -81,25 +81,6 @@ var Junkai = (() => {
     throw lastErr || new Error("fetch-fail");
   }
 
-  // エリアページがフォアグラウンドに戻った時にPULLを実行する。
-  // visibilitychange・pageshow・focusの3つで確実に検知する。
-  // ただしPUSH中（syncInspectionAll実行中）はPULLをブロックする。
-  let _pushInProgress = false;
-
-  async function pullOnVisible() {
-    if (_pushInProgress) return;
-    try {
-      await executePullLog(true);
-    } catch(e) {
-      console.warn('自動PULL失敗:', e);
-    }
-  }
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') pullOnVisible();
-  });
-  window.addEventListener('pageshow', () => pullOnVisible());
-  window.addEventListener('focus', () => pullOnVisible());
-
   // ===== 戻り時の自動アクション (強化版) =====
   function handleReturnActions() {
     // 1. 作業管理アプリからの戻り -> 自動チェック
@@ -471,12 +452,10 @@ var Junkai = (() => {
     }
   }
 
-  // pullLogの共通処理。PULLボタン・PUSH後の自動PULLの両方から呼ぶ。
-  // silent=trueの場合はUI更新（showProgress/statusText）を行わない。
-  async function executePullLog(silent = false) {
+  // PULLの共通処理。PULLボタン・PUSH後の自動PULL・initCity起動時PULLで共用。
+  async function executePullLog() {
     const url = `${getGasUrlSafe()}?action=pullLog&_=${Date.now()}`;
     const json = await fetchJSONWithRetry(url, 2);
-    if (!silent) showProgress && showProgress(true, 50);
     if (!json || !json.ok || !Array.isArray(json.rows)) throw new Error("ログ取得失敗");
     const logRows = json.rows;
     let updatedCount = 0, addedCount = 0, deletedCount = 0;
@@ -672,7 +651,6 @@ var Junkai = (() => {
   }
 
   async function syncInspectionAll() {
-    _pushInProgress = true;
     const all = [];
     for (const round of ["current", "prev"]) {
       appConfig.forEach(cfg => {
@@ -687,14 +665,14 @@ var Junkai = (() => {
       const h=document.getElementById("hint");
       if(h) h.textContent="送信中...";
       await fetch(`${getGasUrlSafe()}?action=syncInspection`, { method: "POST", body: JSON.stringify({ data: all }) });
+      // PUSH完了後にPULLを実行し、GAS側の最新判定（7days_rule等）を反映する
+      try { await executePullLog(); } catch(e) { console.warn('自動PULL失敗:', e); }
       if(h) {
         h.textContent="送信成功";
         setTimeout(()=>h.textContent=`件数：${all.length}`, 1500);
       }
     } catch (e) {
       if(document.getElementById("hint")) document.getElementById("hint").textContent="送信失敗";
-    } finally {
-      _pushInProgress = false;
     }
   }
 
@@ -716,7 +694,10 @@ var Junkai = (() => {
   }
 
   async function initCity(cityKey) {
-    loadLocalConfig(); 
+    loadLocalConfig();
+    // エリアページを開くたびにPULLを実行し、最新のinspectionlogを反映する。
+    // ポータル版↔WebView版切り替え後にエリアページを開き直した時も最新データになる。
+    try { await executePullLog(); } catch(e) { console.warn('initCity PULL失敗:', e); }
     let cityName = cityKey;
     let targetCfg = appConfig.find(c => c.name === cityKey) || appConfig.find(c => c.slug === cityKey);
     if (!targetCfg) {
