@@ -695,9 +695,6 @@ var Junkai = (() => {
 
   async function initCity(cityKey) {
     loadLocalConfig();
-    // エリアページを開くたびにPULLを実行し、最新のinspectionlogを反映する。
-    // ポータル版↔WebView版切り替え後にエリアページを開き直した時も最新データになる。
-    try { await executePullLog(); } catch(e) { console.warn('initCity PULL失敗:', e); }
     let cityName = cityKey;
     let targetCfg = appConfig.find(c => c.name === cityKey) || appConfig.find(c => c.slug === cityKey);
     if (!targetCfg) {
