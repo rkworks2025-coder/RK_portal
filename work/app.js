@@ -180,8 +180,15 @@
         triggerTmaWithRetry(currentVehicle.plate_full, requestId);
       };
 
-      tmaModalGitlab.onclick = () => {
+      tmaModalGitlab.onclick = async () => {
         tmaModal.classList.remove('show');
+        const confirmed = await showConfirmModal(
+          "この操作はサーバー障害時の非常用です",
+          "本当に実行しますか？",
+          "OK",
+          "キャンセル"
+        );
+        if (!confirmed) return;
         const requestId = "req-" + Date.now() + "-" + Math.random().toString(36).slice(-4);
         triggerTmaGitlab(currentVehicle.plate_full, requestId);
       };
