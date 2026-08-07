@@ -134,6 +134,27 @@
     }
   }
 
+  // ▼ 追加: GitHub Actions障害時のGitLabフォールバック
+  async function triggerTmaGitlab(plate, requestId) {
+    const intervals = [0, 3000, 5000];
+    for (let i = 0; i < 3; i++) {
+      try {
+        await new Promise(r => setTimeout(r, intervals[i]));
+        const res = await fetch(`${window.TMA_GAS_URL}?action=triggerTMA_GITLAB`, {
+          method: "POST",
+          body: JSON.stringify({ plate, requestId }),
+          keepalive: true
+        });
+        const json = await res.json();
+        if (json.ok) {
+          showToast("✅ GitLabでTMA自動入力スタート");
+          return;
+        }
+      } catch (e) { console.warn(`TMA GitLab Retry ${i+1} failed`); }
+    }
+    showToast("❌ GitLab側の送信にも失敗しました", true);
+  }
+
   // ▼ 追加: TMA手動再実行ボタンの初期化
   function initWorkTmaBtn() {
     const tmaBtn = document.getElementById('workTmaBtn');
@@ -141,8 +162,9 @@
     const tmaModalTitle = document.getElementById('workTmaModalTitle');
     const tmaModalModel = document.getElementById('workTmaModalModel');
     const tmaModalOk = document.getElementById('workTmaModalOk');
+    const tmaModalGitlab = document.getElementById('workTmaModalGitlab');
     const tmaModalCancel = document.getElementById('workTmaModalCancel');
-    if (!tmaBtn || !tmaModal || !tmaModalOk || !tmaModalCancel) return;
+    if (!tmaBtn || !tmaModal || !tmaModalOk || !tmaModalGitlab || !tmaModalCancel) return;
 
     tmaBtn.addEventListener('click', () => {
       // モーダルに車番・車種を表示
@@ -156,6 +178,12 @@
         // 新しいrequestIdを発行してGASへ直接POST（遷移なし）
         const requestId = "req-" + Date.now() + "-" + Math.random().toString(36).slice(-4);
         triggerTmaWithRetry(currentVehicle.plate_full, requestId);
+      };
+
+      tmaModalGitlab.onclick = () => {
+        tmaModal.classList.remove('show');
+        const requestId = "req-" + Date.now() + "-" + Math.random().toString(36).slice(-4);
+        triggerTmaGitlab(currentVehicle.plate_full, requestId);
       };
 
       tmaModalCancel.onclick = () => {
