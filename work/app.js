@@ -137,6 +137,7 @@
   // ▼ 追加: GitHub Actions障害時のGitLabフォールバック
   async function triggerTmaGitlab(plate, requestId) {
     const intervals = [0, 3000, 5000];
+    let lastError = "";
     for (let i = 0; i < 3; i++) {
       try {
         await new Promise(r => setTimeout(r, intervals[i]));
@@ -150,9 +151,10 @@
           showToast("✅ GitLabでTMA自動入力スタート");
           return;
         }
-      } catch (e) { console.warn(`TMA GitLab Retry ${i+1} failed`); }
+        lastError = json.error || "";
+      } catch (e) { console.warn(`TMA GitLab Retry ${i+1} failed`); lastError = String(e); }
     }
-    showToast("❌ GitLab側の送信にも失敗しました", true);
+    showToast("❌ GitLab送信失敗: " + lastError, true);
   }
 
   // ▼ 追加: TMA手動再実行ボタンの初期化
