@@ -202,6 +202,17 @@ background: #000; display: flex; align-items: center; justify-content: center; c
   border-color: #14b8a6;
   color: #5eead4;
 }
+.tma-modal-actions .btn-danger {
+  background: #020617;
+  border: 1px solid #dc2626;
+  color: #f87171;
+  line-height: 1.3;
+}
+.tma-modal-actions .btn-danger:hover {
+  background: #1f0a0a;
+  border-color: #ef4444;
+  color: #fca5a5;
+}
 
 /* スマホ用調整 */
 @media (max-width: 480px) {
