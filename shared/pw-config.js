@@ -1,30 +1,21 @@
 /* shared/pw-config.js
-   担当者（片山 / 戸島）× PWモード（1 / 2）の組み合わせによる
-   TMAログイン用パスワード一覧。
-   数か月ごとにPWが1↔2で切り替わる運用のため、
-   コード内の値そのものは保持しつつ、選択はボタンタップで行う。
+   担当者（片山 / 戸島）× PWモード（1 / 2）の選択状態を管理する。
 
-   TMAログインには以下3つの値が必要:
-     1. 共通ID（片山・戸島ともに同じ値）
-     2. 担当者ID（片山・戸島で異なる値）
-     3. PW（担当者×PWモードで決まる値）
+   このファイルは公開GitHub Pagesで配信される（誰でもソースを閲覧できる）ため、
+   実際のTMAログインID・パスワードは一切保持しない。
+   画面には「mode1かmode2か」を見分けるための先頭1桁マスク表示のみを行う。
+   実際のログイン処理（TMA_ID/PASSWORDの参照）はGitHub Actions側の
+   Secretsから行われ、ここではmode1/mode2というラベルしか送らない。
 */
 
-const RK_TMA_LOGIN_COMMON_ID = "0030";
-
-const RK_TMA_LOGIN_USER_ID = {
-  katayama: "REDACTED",
-  tojima: "REDACTED"
-};
-
-const RK_PW_CONFIG = {
+const RK_PW_HINT_CONFIG = {
   katayama: {
-    mode1: "REDACTED",
-    mode2: "REDACTED"
+    mode1: "Ccj-2•••••",
+    mode2: "Ccj-3•••••"
   },
   tojima: {
-    mode1: "REDACTED",
-    mode2: "REDACTED"
+    mode1: "Ccj-2•••••",
+    mode2: "Ccj-9•••••"
   }
 };
 
@@ -60,48 +51,17 @@ function clearCurrentPwMode() {
 }
 
 /**
- * 指定した担当者・指定したPWモードに対応するPW値を取得する。
- * 選択画面で「このボタンを押すとどのPWになるか」を事前表示するために使う。
+ * 指定した担当者・指定したPWモードに対応する、先頭1桁マスク済みの
+ * 表示用ヒント文字列を取得する（実パスワードは含まない）。
+ * 選択画面で「このボタンを押すとどのPWモードになるか」を
+ * 見分けるためだけに使う。
  *
  * @param {string} userId - "katayama" または "tojima"
  * @param {string} mode - "mode1" または "mode2"
  * @returns {string | null}
  */
 function getPwValueFor(userId, mode) {
-  const userConfig = RK_PW_CONFIG[userId];
+  const userConfig = RK_PW_HINT_CONFIG[userId];
   if (!userConfig) return null;
   return userConfig[mode] || null;
-}
-
-/**
- * 現在ログイン中の担当者・現在選択中のPWモードに対応する
- * TMAログイン用パスワードを取得する。
- * shared/user-context.js の getCurrentUser() に依存。
- *
- * @returns {string | null}
- */
-function getCurrentTmaPassword() {
-  const user = getCurrentUser();
-  const mode = getCurrentPwMode();
-  if (!user || !mode) return null;
-  const userConfig = RK_PW_CONFIG[user.id];
-  if (!userConfig) return null;
-  return userConfig[mode];
-}
-
-/**
- * 現在ログイン中の担当者・現在選択中のPWモードに対応する
- * TMAログインに必要な3つの値（共通ID／担当者ID／PW）をまとめて取得する。
- *
- * @returns {{commonId: string, userId: string, password: string} | null}
- */
-function getCurrentTmaLoginInfo() {
-  const user = getCurrentUser();
-  const password = getCurrentTmaPassword();
-  if (!user || !password) return null;
-  return {
-    commonId: RK_TMA_LOGIN_COMMON_ID,
-    userId: RK_TMA_LOGIN_USER_ID[user.id],
-    password: password
-  };
 }
