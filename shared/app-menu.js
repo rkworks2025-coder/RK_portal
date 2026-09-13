@@ -85,6 +85,28 @@
     }
     .rk-appmenu-item:last-child { border-bottom: none; }
     .rk-appmenu-item:active { background: rgba(255,255,255,0.08); }
+    /* <button>版のメニュー項目はfontを継承しないため明示的に合わせる */
+    button.rk-appmenu-item { font: inherit; }
+    /* メモリ解放時の簡易トースト（各アプリ独自のトースト実装に依存しないよう自前で持つ） */
+    .rk-appmenu-toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(24px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(8px);
+      background: #1a1a1e;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #eee;
+      font-size: 13px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      z-index: 2003;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      white-space: nowrap;
+    }
+    .rk-appmenu-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   `;
 
   // ===== リンク先の定義 =====
@@ -106,8 +128,60 @@
       { label: "予約",   href: resolveHref(`${PORTAL_ROOT}yoyaku/`, true) },
       { label: "JKS",    href: resolveHref(`${PORTAL_ROOT}jks/`, true) },
       { label: "JKS II", href: resolveHref(`${PORTAL_ROOT}jks2/`, true) },
-      { label: "実績",   href: `${PORTAL_ROOT}jisseki/` }
+      { label: "実績",   href: `${PORTAL_ROOT}jisseki/` },
+      { label: "メモリ解放", action: "releaseMemory" }
     ];
+  }
+
+  // ===== メモリ解放（手動トリガー） =====
+  // メモリークリーナーアプリが行っているのと同じ発想で、意図的に
+  // 大きなメモリを確保→即破棄することでiOS側に「フォアグラウンドの
+  // このページのためにメモリが必要」と判断させ、バックグラウンドの
+  // 不要プロセスをOS側に解放させる。効果はiOS側の裁量に委ねられる
+  // ベストエフォートであり、確実な解放を保証するものではない。
+  // サイズは自己を巻き込んで落ちない範囲で経験的に決めた暫定値。
+  let toastEl = null;
+  function showAppMenuToast(msg) {
+    if (!toastEl) {
+      toastEl = document.createElement("div");
+      toastEl.className = "rk-appmenu-toast";
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    // 一度表示済みの場合も再度アニメーションさせるため強制的にreflow
+    toastEl.classList.remove("show");
+    void toastEl.offsetWidth;
+    toastEl.classList.add("show");
+    clearTimeout(toastEl._hideTimer);
+    toastEl._hideTimer = setTimeout(() => toastEl.classList.remove("show"), 2000);
+  }
+
+  function releaseMemory() {
+    showAppMenuToast("メモリを解放中…");
+    // トーストの描画を先に反映させてから重い処理に入る
+    setTimeout(() => {
+      try {
+        const CHUNK_BYTES = 8 * 1024 * 1024;  // 8MBずつ確保
+        const TARGET_MB = 160;                // 暫定値（要調整）
+        const chunks = [];
+        let allocated = 0;
+        while (allocated < TARGET_MB * 1024 * 1024) {
+          const buf = new Uint8Array(CHUNK_BYTES);
+          // 単に確保しただけでは仮想アドレスの予約に留まる場合があるため、
+          // 実メモリとして本当にコミットさせるべく全ページに書き込む
+          for (let i = 0; i < buf.length; i += 4096) buf[i] = 1;
+          chunks.push(buf);
+          allocated += CHUNK_BYTES;
+        }
+        setTimeout(() => {
+          chunks.length = 0; // 参照を破棄しGC対象にする
+          showAppMenuToast("メモリを解放しました");
+        }, 400);
+      } catch (e) {
+        // 確保上限到達(RangeError等)もここで握りつぶし、トーストのみ表示
+        showAppMenuToast("メモリを解放しました");
+      }
+    }, 50);
   }
 
   // ===== 挿入先の探索 =====
@@ -149,6 +223,19 @@
     popup.style.display = "none";
 
     buildMenuItems().forEach(item => {
+      if (item.action) {
+        // アクション項目（他アプリへの遷移ではなく、その場で処理を実行する）
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "rk-appmenu-item";
+        b.textContent = item.label;
+        b.addEventListener("click", () => {
+          closeMenu();
+          if (item.action === "releaseMemory") releaseMemory();
+        });
+        popup.appendChild(b);
+        return;
+      }
       const a = document.createElement("a");
       a.className = "rk-appmenu-item";
       a.textContent = item.label;
