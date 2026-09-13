@@ -98,7 +98,7 @@
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
-    el.textContent = `前回測定日 ${y}年${m}月${day}日`;
+    el.textContent = `前回測定日 ${y}/${m}/${day}`;
   }
 
   async function fetchSheetData(){
