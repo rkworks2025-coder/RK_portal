@@ -1,5 +1,7 @@
 // 作業管理アプリ app.js Version: V1K (TMA手動再実行ボタン追加)
 // version: V1L (RK_portal統合に伴いGITHUB_IMG_API/TMA_GAS_URL/SHEETS_URLを共通設定化)
+// version: V1M (TMA自動入力: 30秒の独立タイマーを廃止しfetch結果ベースの判定に変更、
+//               リトライを1回目・2回目とも最大60秒待機に変更、requestId使い回しを廃止)
 (() => {
   // スプラッシュ画像は担当者ごとにimgフォルダ配下のサブフォルダを分ける（img/katayama, img/tojima）
   const GITHUB_IMG_API = (() => {
@@ -16,9 +18,7 @@
   let timerId = null;
   let currentVehicle = { station: '', model: '', plate_full: '' };
 
-  let tmaMonitorTimer = null;
   let alarmInterval = null;
-  let isTmaSuccess = false;
   let audioCtx = null;
 
   function playBeep(type = 'success') {
@@ -94,56 +94,85 @@
     });
   }
 
-  async function triggerTmaWithRetry(plate, requestId) {
-    isTmaSuccess = false;
-    if (tmaMonitorTimer) clearTimeout(tmaMonitorTimer);
-    
-    tmaMonitorTimer = setTimeout(async () => {
-      if (!isTmaSuccess) {
-        startAlarmLoop();
-        const retry = await showConfirmModal(
-          "⚠️ 自動入力失敗！",
-          "TMA自動入力の通信に失敗しました、再送しますか？",
-          "再送する",
-          "キャンセル"
-        );
-        stopAlarmLoop();
-        if (retry) {
-          triggerTmaWithRetry(plate, requestId);
-        }
-      }
-    }, 30000);
+  // ▼ 追加(V1M): requestId生成を1箇所に集約。
+  // リトライのたびに新しいIDを発行するために使う（同じIDを使い回すと、
+  // GAS側のdedupeキャッシュが「処理済み」と誤判定しok:trueを返す可能性があるため）。
+  function generateRequestId() {
+    return "req-" + Date.now() + "-" + Math.random().toString(36).slice(-4);
+  }
 
-    const intervals = [0, 3000, 5000];
-    for (let i = 0; i < 3; i++) {
-      try {
-        await new Promise(r => setTimeout(r, intervals[i]));
-        const res = await fetch(`${window.TMA_GAS_URL}?action=triggerTMA`, {
-          method: "POST",
-          body: JSON.stringify({ plate, requestId }),
-          keepalive: true
-        });
-        const json = await res.json();
-        if (json.ok) {
-          isTmaSuccess = true;
-          clearTimeout(tmaMonitorTimer);
-          showToast("✅ TMA自動入力スタート");
-          return;
-        }
-      } catch (e) { console.warn(`TMA Retry ${i+1} failed`); }
+  // ▼ 追加(V1M): TMAトリガーAPIを1回叩くための共通処理。
+  // AbortControllerでtimeoutMsだけ待ち、それを超えたら通信失敗として扱う
+  // （GAS側が混雑して応答が遅いだけのケースを異常終了させないよう、
+  // ここは60秒という長めの値を渡して使う想定）。
+  async function postTmaAction(action, plate, requestId, timeoutMs) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(`${window.TMA_GAS_URL}?action=${action}`, {
+        method: "POST",
+        body: JSON.stringify({ plate, requestId }),
+        keepalive: true,
+        signal: controller.signal
+      });
+      return await res.json();
+    } catch (e) {
+      return { ok: false, error: String(e) };
+    } finally {
+      clearTimeout(timer);
     }
   }
 
-  // ▼ 追加: GitHub Actions障害時のGitLabフォールバック
+  // ▼ 修正(V1M): 従来あった30秒の独立タイマー（tmaMonitorTimer/isTmaSuccess）を廃止。
+  // このタイマーは実際のfetchの完了とは無関係に30秒で強制的に「失敗」と判定して
+  // いたため、GAS側の処理が混雑等で30秒を超えた場合、実際には正常に処理が進んで
+  // いても誤って失敗アラートを出してしまっていた。
+  // 判定はfetchの結果だけを見る方式に変更し、1回目・2回目とも最大60秒待機する。
+  // 2回目はrequestIdを発行し直す（使い回しによる誤判定防止）。
+  async function triggerTmaWithRetry(plate, requestId) {
+    let json = await postTmaAction("triggerTMA", plate, requestId, 60000);
+    if (json.ok) {
+      showToast("✅ TMA自動入力スタート");
+      return;
+    }
+    console.warn("TMA 1回目失敗: " + (json.error || ""));
+
+    const retryRequestId = generateRequestId();
+    json = await postTmaAction("triggerTMA", plate, retryRequestId, 60000);
+    if (json.ok) {
+      showToast("✅ TMA自動入力スタート");
+      return;
+    }
+    console.warn("TMA 2回目失敗: " + (json.error || ""));
+
+    // 2回とも失敗した時だけ、ここで初めて失敗をユーザーに知らせる
+    startAlarmLoop();
+    const retry = await showConfirmModal(
+      "⚠️ 自動入力失敗！",
+      "TMA自動入力の通信に失敗しました、再送しますか？",
+      "再送する",
+      "キャンセル"
+    );
+    stopAlarmLoop();
+    if (retry) {
+      triggerTmaWithRetry(plate, generateRequestId());
+    }
+  }
+
+  // ▼ 修正(V1M): GitHub Actions障害時のGitLabフォールバック。
+  // 従来は3回のリトライで同じrequestIdを使い回しており、main.gs側のdedupe
+  // キャッシュにより1回目が実際は失敗していても2回目以降がok:trueを返して
+  // しまう可能性があった。リトライごとに新しいrequestIdを発行するよう修正。
   async function triggerTmaGitlab(plate, requestId) {
     const intervals = [0, 3000, 5000];
     let lastError = "";
     for (let i = 0; i < 3; i++) {
       try {
         await new Promise(r => setTimeout(r, intervals[i]));
+        const currentRequestId = i === 0 ? requestId : generateRequestId();
         const res = await fetch(`${window.TMA_GAS_URL}?action=triggerTMA_GITLAB`, {
           method: "POST",
-          body: JSON.stringify({ plate, requestId }),
+          body: JSON.stringify({ plate, requestId: currentRequestId }),
           keepalive: true
         });
         const json = await res.json();
@@ -178,7 +207,7 @@
       tmaModalOk.onclick = () => {
         tmaModal.classList.remove('show');
         // 新しいrequestIdを発行してGASへ直接POST（遷移なし）
-        const requestId = "req-" + Date.now() + "-" + Math.random().toString(36).slice(-4);
+        const requestId = generateRequestId();
         triggerTmaWithRetry(currentVehicle.plate_full, requestId);
       };
 
@@ -191,7 +220,7 @@
           "キャンセル"
         );
         if (!confirmed) return;
-        const requestId = "req-" + Date.now() + "-" + Math.random().toString(36).slice(-4);
+        const requestId = generateRequestId();
         triggerTmaGitlab(currentVehicle.plate_full, requestId);
       };
 
@@ -219,7 +248,6 @@
     if (!ok) return;
 
     clearInterval(timerId);
-    if (tmaMonitorTimer) clearTimeout(tmaMonitorTimer);
     completeBtn.disabled = true;
     completeBtn.textContent = "送信中...";
     
