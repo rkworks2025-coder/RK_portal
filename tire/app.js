@@ -87,6 +87,20 @@
     });
   }
 
+  // 「タイヤ別入力」タイトル横の前回測定日表示（GASの timestamp_iso 列由来）
+  function applyPrevDate(raw){
+    const el = document.getElementById('prevDate');
+    if(!el) return;
+    if(!raw){ el.textContent = ''; return; }
+    // GAS側で "yyyy/MM/dd HH:mm:ss"（Asia/Tokyo）形式の文字列として返る想定
+    const d = new Date(String(raw).trim());
+    if(isNaN(d.getTime())){ el.textContent = ''; return; }
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    el.textContent = `前回測定日 ${y}年${m}月${day}日`;
+  }
+
   async function fetchSheetData(){
     const st = gv('[name="station"]');
     const md = gv('[name="model"]');
@@ -109,6 +123,7 @@
       if(data.std_f && f && !f.value) f.value = data.std_f;
       if(data.std_r && r && !r.value) r.value = data.std_r;
       applyPrev(data.prev || {});
+      applyPrevDate(data.prev_timestamp);
     }catch(err){ 
       console.error('fetchSheetData failed', err);
       throw err;
