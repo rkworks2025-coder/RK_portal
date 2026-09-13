@@ -38,6 +38,7 @@ input:focus { border-color: var(--brand); outline: none; background: #1a1a1a; }
 .inline .cap{ display:flex; justify-content:space-between; align-items:center; gap:6px; font-size:14px; color:var(--muted); }
 .cap{ white-space:nowrap; }
 .cap .prev-val{ color:var(--brand); font-size:16px; }
+.title .prev-date{ color:var(--brand); font-size:14px; font-weight:400; }
 
 .btn{ appearance:none; border:1px solid #333; background:#222; color:#fff; padding:9px 12px; border-radius:12px; font-size:16px; text-align:center; }
 .btn.primary{ background:var(--brand); color:#000; border-color:var(--brand); }
