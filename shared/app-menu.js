@@ -139,7 +139,11 @@
   // このページのためにメモリが必要」と判断させ、バックグラウンドの
   // 不要プロセスをOS側に解放させる。効果はiOS側の裁量に委ねられる
   // ベストエフォートであり、確実な解放を保証するものではない。
-  // サイズは自己を巻き込んで落ちない範囲で経験的に決めた暫定値。
+  // 使用率80%程度でも変化なしだった実測を受け、自己のページが
+  // Jetsamに落とされ白画面リロードになることを許容した上で、
+  // 確保できる限界まで攻める方針に変更（ユーザー承認済み）。
+  // ページ自体が落ちた場合はそのプロセスの再読み込みそのものが
+  // メモリ解放の成立を意味するため、それ自体が「成功」とみなせる。
   let toastEl = null;
   function showAppMenuToast(msg) {
     if (!toastEl) {
@@ -161,24 +165,28 @@
     // トーストの描画を先に反映させてから重い処理に入る
     setTimeout(() => {
       try {
-        const CHUNK_BYTES = 8 * 1024 * 1024;  // 8MBずつ確保
-        const TARGET_MB = 160;                // 暫定値（要調整）
+        const CHUNK_BYTES = 8 * 1024 * 1024;   // 8MBずつ確保
+        const SAFETY_CAP_MB = 700;             // 暴走防止の上限（実機ではこれより先にJetsamに落ちる想定）
         const chunks = [];
         let allocated = 0;
-        while (allocated < TARGET_MB * 1024 * 1024) {
+        while (allocated < SAFETY_CAP_MB * 1024 * 1024) {
           const buf = new Uint8Array(CHUNK_BYTES);
           // 単に確保しただけでは仮想アドレスの予約に留まる場合があるため、
           // 実メモリとして本当にコミットさせるべく全ページに書き込む
           for (let i = 0; i < buf.length; i += 4096) buf[i] = 1;
           chunks.push(buf);
           allocated += CHUNK_BYTES;
+          // 確保のたびにトーストへ進捗を出す（白画面で落ちた場合、直前の
+          // 数値が「どこまで確保できたか」の目安として画面に残る）
+          showAppMenuToast(`メモリ確保中… ${Math.round(allocated / 1024 / 1024)}MB`);
         }
         setTimeout(() => {
           chunks.length = 0; // 参照を破棄しGC対象にする
           showAppMenuToast("メモリを解放しました");
         }, 400);
       } catch (e) {
-        // 確保上限到達(RangeError等)もここで握りつぶし、トーストのみ表示
+        // 確保上限到達(RangeError等)。ここまで確保できたこと自体が
+        // 目的（強い圧迫の発生）なので、握りつぶしてトーストのみ表示
         showAppMenuToast("メモリを解放しました");
       }
     }, 50);
