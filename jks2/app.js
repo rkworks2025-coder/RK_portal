@@ -530,6 +530,7 @@ function buildTimeline(timeline, getTime) {
 }
 
 // ===== 点検ボタン =====
+// ▼▼▼ 修正箇所：モーダルでの手動切り替え案内をやめ、巡回アプリの該当エリアページへ直接遷移 ▼▼▼
 function goTireApp(plate, stationName, model) {
   const JUNKAI_AREA_URL = `https://rkworks2025-coder.github.io/-/area.html?city=${CURRENT_AREA}`;
   try {
@@ -537,8 +538,9 @@ function goTireApp(plate, stationName, model) {
     localStorage.setItem('junkai:auto_tire_station', stationName);
     localStorage.setItem('junkai:auto_tire_model', model);
   } catch(e) {}
-  showToast(`巡回アプリに切り替えてください\n【${plate}】の点検ボタンが自動で押されます`);
+  location.href = JUNKAI_AREA_URL;
 }
+// ▲▲▲ 修正ここまで ▲▲▲
 
 // ===== スキャン =====
 function clearScanBadges() {
