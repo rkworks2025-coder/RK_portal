@@ -3,7 +3,7 @@
   "short_name": "RK Works",
   "description": "巡回・点検業務 統合ポータル",
   "start_url": "./index.html",
-  "scope": "./",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#15171a",
