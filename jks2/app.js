@@ -17,8 +17,8 @@ const AREA_KEY = () => CURRENT_AREA;
 const MAP_CACHE_KEY = 'jks2_map_cache';
 const GPS_CACHE_KEY = 'jks2_gps_cache';
 
-const TIRE_APP_URL = 'https://rkworks2025-coder.github.io/TireCheck/';
-const WORK_APP_URL = 'https://rkworks2025-coder.github.io/work/';
+const TIRE_APP_URL = '../tire/';
+const WORK_APP_URL = '../work/';
 const JUNKAI_GAS_URL = 'https://script.google.com/macros/s/AKfycbyXbPaarnD7mQa_rqm6mk-Os3XBH6C731aGxk7ecJC5U3XjtwfMkeF429rezkAo79jN/exec';
 
 // ===== Google Maps 初期化 =====
@@ -532,7 +532,7 @@ function buildTimeline(timeline, getTime) {
 // ===== 点検ボタン =====
 // ▼▼▼ 修正箇所：モーダルでの手動切り替え案内をやめ、巡回アプリの該当エリアページへ直接遷移 ▼▼▼
 function goTireApp(plate, stationName, model) {
-  const JUNKAI_AREA_URL = `https://rkworks2025-coder.github.io/-/area.html?city=${CURRENT_AREA}`;
+  const JUNKAI_AREA_URL = `../junkai/area.html?city=${CURRENT_AREA}`;
   try {
     localStorage.setItem('junkai:auto_tire_plate', plate);
     localStorage.setItem('junkai:auto_tire_station', stationName);
