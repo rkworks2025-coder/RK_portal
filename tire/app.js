@@ -92,10 +92,11 @@
   function applyPrevDate(raw){
     const el = document.getElementById('prevDate');
     if(!el) return;
-    if(!raw){ el.textContent = ''; return; }
-    // GAS側で "yyyy/MM/dd HH:mm:ss"（Asia/Tokyo）形式の文字列として返る想定
+    // ▼▼▼ 一時変更：原因切り分け用に、空欄にせず理由を表示する ▼▼▼
+    if(!raw){ el.textContent = '(前回測定日: rawが空/未定義)'; return; }
     const d = new Date(String(raw).trim());
-    if(isNaN(d.getTime())){ el.textContent = ''; return; }
+    if(isNaN(d.getTime())){ el.textContent = '(前回測定日: 解析失敗 raw=' + String(raw).slice(0,24) + ')'; return; }
+    // ▲▲▲ 一時変更ここまで ▲▲▲
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
