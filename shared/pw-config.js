@@ -14,8 +14,8 @@ const RK_PW_HINT_CONFIG = {
     mode2: "Ccj-3•••••"
   },
   tojima: {
-    mode1: "Ccj-2•••••",
-    mode2: "Ccj-9•••••"
+    mode1: "Ccj-8•••••",
+    mode2: "Ccj-1•••••"
   }
 };
 
