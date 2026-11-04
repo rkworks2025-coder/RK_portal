@@ -19,6 +19,29 @@ const RK_USER_TAG_KEY = "rk_portal_user_tag";
    ssIdKey   : 各アプリ側で「この担当者の場合はこのSS IDを使う」と
                参照するためのキー。実際のSS IDは各アプリ側の設定で持つ。
 */
+/* 同一オリジン（rkworks2025-coder.github.io）を共有する他アプリの
+   localStorageキー接頭辞。GitHub Pagesは全リポジトリが同じオリジンのため、
+   localStorage.clear() を使うと戸島用WebView版（TJM_patrol / TJM_TireCheck /
+   TJM_work）の巡回データまで消えてしまう。
+   ここに列挙した接頭辞で始まるキーは、ポータル側の全消去対象から除外する。 */
+const RK_PRESERVE_KEY_PREFIXES = ["tjm:"];
+
+/**
+ * ポータル用のlocalStorageを全消去する（localStorage.clear() の代替）。
+ * RK_PRESERVE_KEY_PREFIXES に該当するキー（他アプリのデータ）は残す。
+ */
+function clearPortalStorage_() {
+  const keys = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k !== null) keys.push(k);
+  }
+  keys.forEach(k => {
+    if (RK_PRESERVE_KEY_PREFIXES.some(p => k.startsWith(p))) return;
+    localStorage.removeItem(k);
+  });
+}
+
 const RK_USERS = [
   { id: "katayama", label: "片山用" },
   { id: "tojima",   label: "戸島用" }
@@ -50,7 +73,7 @@ function ensureUserStorageConsistency_() {
   if (currentUserId === null) {
     // 担当者が未選択の状態。タグも残さない。
     if (storedTag !== null) {
-      localStorage.clear();
+      clearPortalStorage_();
     }
     return;
   }
@@ -61,7 +84,7 @@ function ensureUserStorageConsistency_() {
     // rk_portal_user 自体も含めて一旦全消去し、
     // 今回ログインした担当者の情報とタグだけを再設定する。
     const userToRestore = RK_USERS.find(u => u.id === currentUserId);
-    localStorage.clear();
+    clearPortalStorage_();
     if (userToRestore) {
       localStorage.setItem(RK_USER_STORAGE_KEY, JSON.stringify(userToRestore));
       localStorage.setItem(RK_USER_TAG_KEY, userToRestore.id);
@@ -93,7 +116,7 @@ function getCurrentUser() {
  * 各アプリがlocalStorageに保存しているエリア選択・表示モード等が
  * 前の担当者の値のまま引き継がれてしまうのを防ぐため、
  * 担当者情報以外のlocalStorageを全消去してから新しい担当者を保存する。
- * （このオリジン＝RK_portal以外のlocalStorageには影響しない）
+ * （同一オリジンの他アプリのキー＝RK_PRESERVE_KEY_PREFIXES該当分は消さない）
  * @param {string} userId - "katayama" または "tojima"
  */
 function setCurrentUser(userId) {
@@ -105,7 +128,7 @@ function setCurrentUser(userId) {
 
   // 既存データはすべて前の担当者のものである可能性があるため、
   // タグの値に関わらず常に全消去してから新しい担当者を保存する。
-  localStorage.clear();
+  clearPortalStorage_();
   localStorage.setItem(RK_USER_STORAGE_KEY, JSON.stringify(user));
   localStorage.setItem(RK_USER_TAG_KEY, user.id);
 }
