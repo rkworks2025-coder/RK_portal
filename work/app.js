@@ -2,6 +2,7 @@
 // version: V1L (RK_portal統合に伴いGITHUB_IMG_API/TMA_GAS_URL/SHEETS_URLを共通設定化)
 // version: V1M (TMA自動入力: 30秒の独立タイマーを廃止しfetch結果ベースの判定に変更、
 //               リトライを1回目・2回目とも最大60秒待機に変更、requestId使い回しを廃止)
+// version: V1N (TMA自動入力: GitHub Actions起動遅延を3分で検知しGitLabへ自動切替)
 (() => {
   // スプラッシュ画像は担当者ごとにimgフォルダ配下のサブフォルダを分ける（img/katayama, img/tojima）
   const GITHUB_IMG_API = (() => {
@@ -133,6 +134,7 @@
     let json = await postTmaAction("triggerTMA", plate, requestId, 60000);
     if (json.ok) {
       showToast("✅ TMA自動入力スタート");
+      addTmaWatch(plate); // ▼ 追加(V1N): 起動遅延の監視を開始
       return;
     }
     console.warn("TMA 1回目失敗: " + (json.error || ""));
@@ -141,6 +143,7 @@
     json = await postTmaAction("triggerTMA", plate, retryRequestId, 60000);
     if (json.ok) {
       showToast("✅ TMA自動入力スタート");
+      addTmaWatch(plate); // ▼ 追加(V1N): 起動遅延の監視を開始
       return;
     }
     console.warn("TMA 2回目失敗: " + (json.error || ""));
@@ -184,6 +187,141 @@
       } catch (e) { console.warn(`TMA GitLab Retry ${i+1} failed`); lastError = String(e); }
     }
     showToast("❌ GitLab送信失敗: " + lastError, true);
+  }
+
+  // ▼ 追加(V1N): GitHub Actions起動遅延の監視（GitLabへの自動切替）。
+  // GitHub側の障害でランナーが割り当てられず、実行が長時間queuedのまま止まったり
+  // startup_failureになったりすることがあるため、送信から3分後にGitHubの公開APIで
+  // 実行状況を確認し、起動が3分を超えて遅れていればGitLab経由で自動実行する。
+  // main.py側も同じ基準（実行作成→ランナー割当が3分超）で入力を中止するため二重入力にならない。
+  // 送信記録はlocalStorageに保存し、画面を閉じていた場合は次にこの画面を開いた時に確認する。
+  const TMA_WATCH_KEY = "work:tma_watch";
+  const TMA_WATCH_LIMIT_MS = 180000; // main.py の GITHUB_START_DELAY_LIMIT と必ず同じ値にすること
+  const TMA_WATCH_CHECK_DELAY_MS = TMA_WATCH_LIMIT_MS + 5000;
+  const TMA_WATCH_NOTFOUND_RETRY_MS = 60000;
+  const TMA_RUNS_API = "https://api.github.com/repos/rkworks2025-coder/TMA-Auto-Input/actions/runs";
+  const tmaWatchBusy = new Set();
+
+  function loadTmaWatch() {
+    try { return JSON.parse(localStorage.getItem(TMA_WATCH_KEY) || "[]"); } catch (e) { return []; }
+  }
+  function saveTmaWatch(list) {
+    try { localStorage.setItem(TMA_WATCH_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+  function updateTmaWatch(id, patch) {
+    saveTmaWatch(loadTmaWatch().map(w => w.id === id ? Object.assign({}, w, patch) : w));
+  }
+  function removeTmaWatch(id) {
+    saveTmaWatch(loadTmaWatch().filter(w => w.id !== id));
+  }
+  // 車番の表記ゆれ（全角/半角・スペース）を吸収して比較する
+  function normPlateForWatch(s) {
+    return String(s || "").normalize("NFKC").replace(/\s+/g, "");
+  }
+
+  function addTmaWatch(plate) {
+    const w = { id: generateRequestId(), plate, sentAt: Date.now(), notFound: 0, nextCheckAt: Date.now() + TMA_WATCH_CHECK_DELAY_MS };
+    const list = loadTmaWatch();
+    list.push(w);
+    saveTmaWatch(list);
+    setTimeout(processTmaWatch, TMA_WATCH_CHECK_DELAY_MS);
+  }
+
+  async function processTmaWatch() {
+    const now = Date.now();
+    for (const w of loadTmaWatch()) {
+      if (w.nextCheckAt > now) {
+        setTimeout(processTmaWatch, w.nextCheckAt - now + 500);
+        continue;
+      }
+      if (tmaWatchBusy.has(w.id)) continue;
+      // 並行して動いた別の確認処理で既に判定済みなら何もしない（GitLab二重実行防止）
+      const cur = loadTmaWatch().find(x => x.id === w.id);
+      if (!cur || cur.nextCheckAt > Date.now()) continue;
+      tmaWatchBusy.add(w.id);
+      try { await checkTmaWatch(cur); } finally { tmaWatchBusy.delete(w.id); }
+    }
+  }
+
+  async function checkTmaWatch(w) {
+    let runs;
+    try {
+      const res = await fetch(`${TMA_RUNS_API}?per_page=30`, { headers: { "Accept": "application/vnd.github+json" } });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      runs = (await res.json()).workflow_runs || [];
+    } catch (e) {
+      // 確認自体ができない時は1分後に再確認（判定できないまま切り替えない）
+      console.warn("TMA監視: GitHub API取得失敗 " + e);
+      updateTmaWatch(w.id, { nextCheckAt: Date.now() + TMA_WATCH_NOTFOUND_RETRY_MS });
+      setTimeout(processTmaWatch, TMA_WATCH_NOTFOUND_RETRY_MS + 500);
+      return;
+    }
+
+    const windowStart = w.sentAt - 30000; // 端末時計のずれ吸収
+    const inWindow = runs.filter(r => Date.parse(r.created_at) >= windowStart);
+    const target = normPlateForWatch(w.plate);
+    const matched = inWindow
+      .filter(r => normPlateForWatch(r.display_title).includes(target))
+      .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))[0];
+
+    if (!matched) {
+      if (w.notFound < 1) {
+        updateTmaWatch(w.id, { notFound: w.notFound + 1, nextCheckAt: Date.now() + TMA_WATCH_NOTFOUND_RETRY_MS });
+        setTimeout(processTmaWatch, TMA_WATCH_NOTFOUND_RETRY_MS + 500);
+        return;
+      }
+      removeTmaWatch(w.id);
+      // 期間内に車番の付いていない実行がある＝車番表記の不一致の可能性があるため、二重入力防止で自動切替しない
+      if (inWindow.some(r => !/^TMA\s/.test(r.display_title || ""))) {
+        showToast(`⚠️ ${w.plate}: GitHubの実行を特定できません。TMAを確認してください`, true);
+        return;
+      }
+      showToast(`⚠️ ${w.plate}: GitHubで実行が見つからないためGitLabで実行します`, true);
+      triggerTmaGitlab(w.plate, generateRequestId());
+      return;
+    }
+
+    const createdAt = Date.parse(matched.created_at);
+    let delayMs;
+    if (matched.conclusion === "startup_failure") {
+      delayMs = Infinity;
+    } else {
+      let startedAt = null;
+      try {
+        const jr = await fetch(`${TMA_RUNS_API}/${matched.id}/jobs`, { headers: { "Accept": "application/vnd.github+json" } });
+        if (!jr.ok) throw new Error("HTTP " + jr.status);
+        const jobs = (await jr.json()).jobs || [];
+        // queued中のジョブにもstarted_atが入ることがあるため、queued以外のジョブだけを見る
+        const st = jobs.filter(j => j.status !== "queued" && j.started_at).map(j => Date.parse(j.started_at));
+        if (st.length) startedAt = Math.min(...st);
+      } catch (e) {
+        console.warn("TMA監視: ジョブ取得失敗 " + e);
+        updateTmaWatch(w.id, { nextCheckAt: Date.now() + TMA_WATCH_NOTFOUND_RETRY_MS });
+        setTimeout(processTmaWatch, TMA_WATCH_NOTFOUND_RETRY_MS + 500);
+        return;
+      }
+      delayMs = (startedAt !== null ? startedAt : Date.now()) - createdAt;
+      if (startedAt === null && delayMs <= TMA_WATCH_LIMIT_MS) {
+        // まだ基準時間に達していない（端末時計のずれ等）→ 基準到達後に再確認
+        const wait = TMA_WATCH_LIMIT_MS - delayMs + 5000;
+        updateTmaWatch(w.id, { nextCheckAt: Date.now() + wait });
+        setTimeout(processTmaWatch, wait + 500);
+        return;
+      }
+    }
+
+    removeTmaWatch(w.id);
+    if (delayMs > TMA_WATCH_LIMIT_MS) {
+      showToast(`⚠️ ${w.plate}: GitHubの起動が遅延したためGitLabで実行します`, true);
+      triggerTmaGitlab(w.plate, generateRequestId());
+    }
+  }
+
+  function initTmaWatch() {
+    processTmaWatch();
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") processTmaWatch();
+    });
   }
 
   // ▼ 追加: TMA手動再実行ボタンの初期化
@@ -308,6 +446,7 @@
 
     initUI();
     initWorkTmaBtn(); // ▼ 追加
+    initTmaWatch(); // ▼ 追加(V1N): 未確認のTMA送信があれば起動遅延を確認
     completeBtn.addEventListener('click', handleWorkComplete);
     startStopwatch();
 
