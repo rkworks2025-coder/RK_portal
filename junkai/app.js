@@ -406,6 +406,24 @@ var Junkai = (() => {
     };
   }
 
+  // プレート照合用キー（空白類を除去）。GAS側normalizePlate_()と同じ考え方。
+  function plateKey(plate) {
+    return String(plate || "").replace(/[\s\u3000]+/g, "").trim();
+  }
+
+  // 同一エリア内で同じプレートが複数ある場合、最初の1行だけ残す。
+  // 除外したプレートは dupList に積む（本部リスト側の重複検出用）。
+  function dedupeByPlate(arr, cityName, dupList) {
+    const seen = new Set();
+    return arr.filter(rec => {
+      const key = plateKey(rec.plate);
+      if (!key) return true;
+      if (seen.has(key)) { dupList.push(`${cityName}:${rec.plate}`); return false; }
+      seen.add(key);
+      return true;
+    });
+  }
+
   function countCity(arr) {
     const c = { done: 0, stop: 0, skip: 0, total: arr.length };
     for (const it of arr) {
@@ -588,8 +606,9 @@ var Junkai = (() => {
             if (buckets[norm.city]) buckets[norm.city].push(norm);
           }
           let wrote = 0;
+          const dupPlates = []; // 本部リスト内で重複していたため除外した車両
           for (const cfg of appConfig) {
-            const arr = buckets[cfg.name];
+            const arr = dedupeByPlate(buckets[cfg.name] || [], cfg.name, dupPlates);
             if (arr && arr.length > 0) {
               applyUIIndex(cfg.name, arr);
               saveCity(cfg.name, arr, "current");
@@ -608,7 +627,7 @@ var Junkai = (() => {
               if (prevBuckets[norm.city]) prevBuckets[norm.city].push(norm);
             }
             for (const cfg of appConfig) {
-              const arr = prevBuckets[cfg.name];
+              const arr = dedupeByPlate(prevBuckets[cfg.name] || [], cfg.name, dupPlates);
               if (arr && arr.length > 0) {
                 applyUIIndex(cfg.name, arr);
                 saveCity(cfg.name, arr, "prev");
@@ -622,6 +641,9 @@ var Junkai = (() => {
           statusText("同期データをinspectionlogへ反映中…");
           await syncInspectionAll();
           showProgress(true, 100); statusText("同期完了（inspectionlogにも反映済み）");
+          if (dupPlates.length > 0) {
+            alert(`本部リスト内の重複車両を除外しました（${dupPlates.length}件）\n` + dupPlates.join("\n"));
+          }
         } catch (e) {
           rollback();
           renderIndexButtons(); repaintCounters();
@@ -655,9 +677,13 @@ var Junkai = (() => {
           if (cityData.length === 0) continue;
           let isCityModified = false;
           const cityLogs = roundRows.filter(r => r.city === cfg.name);
+          const restoredChecked = new Set(); // このエリア・ラウンドで復元済みのチェック済プレート
           cityLogs.forEach(logRow => {
-            const targetRow = cityData.find(r => r.plate === logRow.plate);
+            const targetRow = cityData.find(r => plateKey(r.plate) === plateKey(logRow.plate));
             if (!targetRow) return; // 新規追加・削除はしない
+            // 同じプレートの行がinspectionlogに複数ある場合（重複除外前の名残）、
+            // 先に復元したチェック済を後の行で上書きしない
+            if (restoredChecked.has(plateKey(targetRow.plate))) return;
             let newChecked = false, newStatus = "";
             const s = (logRow.status || "").toLowerCase();
             if (s === "checked" || s === "完了" || s === "済") newChecked = true;
@@ -671,6 +697,7 @@ var Junkai = (() => {
               targetRow.last_inspected_at = newDate;
               isCityModified = true;
             }
+            if (newChecked) restoredChecked.add(plateKey(targetRow.plate));
           });
           if (isCityModified) saveCity(cfg.name, cityData, roundTag);
         }
@@ -974,7 +1001,7 @@ var Junkai = (() => {
           const plate = (document.getElementById("addVehiclePlate").value || "").trim();
           if (!plate) { alert("プレート番号は必須です"); return; }
           const arr = readCity(cityName, round);
-          if (arr.some(r => r.plate === plate)) {
+          if (arr.some(r => plateKey(r.plate) === plateKey(plate))) {
             alert(`【${plate}】は既にリストに存在します`);
             return;
           }
