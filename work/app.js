@@ -3,6 +3,8 @@
 // version: V1M (TMA自動入力: 30秒の独立タイマーを廃止しfetch結果ベースの判定に変更、
 //               リトライを1回目・2回目とも最大60秒待機に変更、requestId使い回しを廃止)
 // version: V1N (TMA自動入力: GitHub Actions起動遅延を3分で検知しGitLabへ自動切替)
+// version: V1O (メモリ不足でアプリが落ちても作業中の状態（開錠時刻・経過時間・入力）を復元／
+//               誤フリップ検知（shared/nav-guard.js）。当面は片山のみ有効)
 (() => {
   // スプラッシュ画像は担当者ごとにimgフォルダ配下のサブフォルダを分ける（img/katayama, img/tojima）
   const GITHUB_IMG_API = (() => {
@@ -21,6 +23,69 @@
 
   let alarmInterval = null;
   let audioCtx = null;
+
+  // ▼ 追加(V1O): 作業中データの保存と復元。
+  // iPhone 8 Plus等でTMAのカメラを起動するとメモリ不足でアプリが落ち、
+  // 開き直すとトップ画面から始まって開錠時刻等が消えてしまうため、
+  // 作業中の情報をlocalStorageに保存し、開き直した時に続きから再開する。
+  // （トップ画面(index.html)は作業中データがあればこの画面へ自動で戻す）
+  // 保存データが消えるのは「作業完了時」「次の車の作業開始時（上書き）」「3時間経過時」のみ。
+  const NAV = window.RKNavGuard || null;
+  const NAV_ON = !!(NAV && NAV.enabled); // 当面は片山のみ有効
+  const WORK_SESSION_KEY = "work:active_session"; // index.html と同じキー名にすること
+  const WORK_SESSION_MAX_MS = 3 * 60 * 60 * 1000; // index.html と同じ値にすること
+  const WORK_INPUT_TOGGLES = ['tg_junior', 'tg_jack', 'tg_lost'];
+  const WORK_INPUT_SELECTS = ['sel_punk_mm', 'sel_punk_yy', 'sel_flare_mm', 'sel_flare_yy'];
+  let workSession = null;
+  let workCompleted = false;
+  let workReturnUrl = '../junkai/'; // 完了時に作業中データを消した後も戻り先を使えるよう別に持つ
+
+  function loadWorkSession() {
+    try { return JSON.parse(localStorage.getItem(WORK_SESSION_KEY) || "null"); } catch (e) { return null; }
+  }
+  function saveWorkSession() {
+    if (!workSession) return;
+    try { localStorage.setItem(WORK_SESSION_KEY, JSON.stringify(workSession)); } catch (e) {}
+  }
+  function clearWorkSession() {
+    workSession = null;
+    try { localStorage.removeItem(WORK_SESSION_KEY); } catch (e) {}
+  }
+  function collectWorkInputs() {
+    const inputs = {};
+    WORK_INPUT_TOGGLES.forEach(id => {
+      const active = document.querySelector(`#${id} .toggle-btn.active`);
+      inputs[id] = active ? active.dataset.val : '';
+    });
+    WORK_INPUT_SELECTS.forEach(id => {
+      const el = document.getElementById(id);
+      inputs[id] = el ? el.value : '';
+    });
+    return inputs;
+  }
+  function applyWorkInputs(inputs) {
+    if (!inputs) return;
+    WORK_INPUT_TOGGLES.forEach(id => {
+      if (!inputs[id]) return;
+      document.querySelectorAll(`#${id} .toggle-btn`).forEach(b => {
+        b.classList.toggle('active', b.dataset.val === inputs[id]);
+      });
+    });
+    WORK_INPUT_SELECTS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el && inputs[id] != null) el.value = inputs[id];
+    });
+  }
+  function persistWorkInputs() {
+    if (!workSession) return;
+    workSession.inputs = collectWorkInputs();
+    saveWorkSession();
+  }
+  // 戻り先の巡回画面。巡回から開いた時のURLを覚えておき、
+  // アプリが落ちて復帰した後（前の画面の履歴が無い時）の戻り先に使う
+  function cameFromJunkai() {
+    return /\/junkai\//.test(document.referrer || '');
+  }
 
   function playBeep(type = 'success') {
     if (!audioCtx) return;
@@ -368,15 +433,20 @@
     });
   }
 
-  function startStopwatch() {
-    startTime = Date.now();
+  // ▼ 修正(V1O): 復元時は保存しておいた開始時刻・開錠時刻から再開できるよう引数を追加
+  function startStopwatch(restoreStartTime, restoreUnlock) {
+    startTime = restoreStartTime || Date.now();
     timerId = setInterval(() => {
       const diff = Math.floor((Date.now() - startTime) / 1000);
       const mm = String(Math.floor(diff / 60)).padStart(2, '0');
       const ss = String(diff % 60).padStart(2, '0');
       document.getElementById('stopwatch').textContent = `${mm}:${ss}`;
     }, 1000);
-    
+
+    if (restoreUnlock) {
+      document.getElementById('unlockTime').textContent = restoreUnlock;
+      return;
+    }
     const now = new Date();
     document.getElementById('unlockTime').textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   }
@@ -414,6 +484,15 @@
     }).catch(e => console.error(e));
 
     try { localStorage.setItem("junkai:completed_plate", currentVehicle.plate_full); } catch(e){}
+    // ▼ 修正(V1O): 片山は作業中データを消し、誤フリップ用ガードも含めて巡回へ戻る
+    if (NAV_ON) {
+      workCompleted = true;
+      NAV.markDone();
+      workReturnUrl = (workSession && workSession.returnUrl) || workReturnUrl;
+      clearWorkSession();
+      setTimeout(() => { NAV.leave(); }, 100);
+      return;
+    }
     setTimeout(() => { history.back(); }, 100);
   }
 
@@ -436,9 +515,16 @@
     }
   }
 
-  function init() {
+  async function init() {
     // 担当者が未選択ならポータルの選択画面へ戻す（RK_portal統合対応）
     if (typeof requireUser === "function" && !requireUser("../select-user.html")) return;
+
+    // ▼ 追加(V1O): 完了済みの作業画面に「進む」フリップで戻ってきた場合は確認する
+    if (NAV_ON && NAV.isDone()) {
+      const stay = await NAV.confirmRevisitIfDone();
+      if (!stay) return;
+    }
+
     const p = new URLSearchParams(location.search);
     currentVehicle.station = p.get('station') || '';
     currentVehicle.model = p.get('model') || '';
@@ -448,23 +534,102 @@
     initWorkTmaBtn(); // ▼ 追加
     initTmaWatch(); // ▼ 追加(V1N): 未確認のTMA送信があれば起動遅延を確認
     completeBtn.addEventListener('click', handleWorkComplete);
-    startStopwatch();
 
-    splash.addEventListener('click', () => {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+    // ▼ 追加(V1O): 同じ作業画面（同じURL）の作業中データがあれば続きから再開する
+    let saved = NAV_ON ? loadWorkSession() : null;
+    if (saved && (!saved.startTime || Date.now() - saved.startTime > WORK_SESSION_MAX_MS)) {
+      clearWorkSession();
+      saved = null;
+    }
+    const restored = !!(saved && saved.url === location.href);
 
-      splash.style.display = 'none';
-      playBeep('success');
-      
-      const tmaPlate = p.get('tma_plate');
-      const tmaReqId = p.get('tma_req_id');
-      if (tmaPlate && tmaReqId) triggerTmaWithRetry(tmaPlate, tmaReqId);
+    if (restored) {
+      workSession = saved;
+      workSession.suspended = false;
+      saveWorkSession();
+      startStopwatch(saved.startTime, saved.unlock);
+      applyWorkInputs(saved.inputs);
+    } else {
+      startStopwatch();
+      if (NAV_ON) {
+        // 新しい作業開始（前の車のデータは上書き）
+        workSession = {
+          url: location.href,
+          plate: currentVehicle.plate_full,
+          startTime: startTime,
+          unlock: document.getElementById('unlockTime').textContent,
+          returnUrl: cameFromJunkai() ? document.referrer : '../junkai/',
+          inputs: collectWorkInputs(),
+          suspended: false
+        };
+        saveWorkSession();
+      }
+    }
 
+    if (NAV_ON) {
+      // 入力を変えるたびに保存
+      document.querySelectorAll('.toggle-btn').forEach(btn => btn.addEventListener('click', persistWorkInputs));
+      WORK_INPUT_SELECTS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', persistWorkInputs);
+      });
+
+      // 誤フリップ検知の設定
+      NAV.setLeaveHandler(() => {
+        // アプリが落ちて復帰した後は前の画面の履歴が無いため、覚えておいた巡回画面へ直接戻る
+        if (!cameFromJunkai()) {
+          location.replace((workSession && workSession.returnUrl) || workReturnUrl);
+          return true;
+        }
+        return false;
+      });
+      // 誤フリップのモーダルでOK（意図して離れた）時は、トップ画面からの自動復帰を止める
+      // （進むフリップでこの画面に戻った時の復元用にデータ自体は残す）
+      NAV.onConfirmLeave = () => {
+        if (workSession) { workSession.suspended = true; saveWorkSession(); }
+      };
+      NAV.shouldRearm = () => !workCompleted;
+      NAV.armOnFirstTouch();
+    }
+
+    const showVehicleInfo = () => {
       document.getElementById('disp_station').textContent = currentVehicle.station || '--';
       document.getElementById('disp_model').textContent = currentVehicle.model || '--';
       document.getElementById('disp_plate').textContent = currentVehicle.plate_full || '--';
-    }, { once: true });
+    };
+
+    if (restored) {
+      // 復帰時はスプラッシュを出さず、TMA自動入力も再送信しない（二重入力防止）
+      splash.style.display = 'none';
+      showVehicleInfo();
+      // 失敗アラーム音用のAudioContextは最初のタップで用意する
+      const prepareAudio = () => {
+        document.removeEventListener('touchend', prepareAudio, true);
+        document.removeEventListener('click', prepareAudio, true);
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+      };
+      document.addEventListener('touchend', prepareAudio, true);
+      document.addEventListener('click', prepareAudio, true);
+    } else {
+      splash.addEventListener('click', () => {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        splash.style.display = 'none';
+        playBeep('success');
+
+        // ▼ 修正(V1O): 履歴移動で開き直した画面ではTMA自動入力を再送信しない（二重入力防止）
+        const tmaPlate = p.get('tma_plate');
+        const tmaReqId = p.get('tma_req_id');
+        if (tmaPlate && tmaReqId && !(NAV_ON && NAV.revisit)) triggerTmaWithRetry(tmaPlate, tmaReqId);
+
+        showVehicleInfo();
+      }, { once: true });
+    }
+
+    // ▼ 追加(V1O): 復帰時はスプラッシュを出さないので画像の抽選もしない
+    if (restored) return;
 
     const splashImgParam = p.get('splash_img');
     if (splashImgParam) {

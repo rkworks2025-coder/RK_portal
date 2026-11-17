@@ -124,12 +124,13 @@
   <script src="../shared/user-context.js"></script>
   <script src="../shared/ss-config.js"></script>
   <script src="../shared/app-menu.js?v=1"></script>
+  <script src="../shared/nav-guard.js?v=1"></script>
   <script>
     // GAS URLは shared/ss-config.js の getGasUrl() から取得する（担当者ごとに自動切替）
     window.TMA_GAS_URL = (typeof getGasUrl === "function" ? getGasUrl("junkai") : null);
     window.SHEETS_URL = (typeof getGasUrl === "function" ? getGasUrl("tire") : null);
     window.SHEETS_KEY = "tl1";
   </script>
-  <script src="app.js?v=V1J" defer></script>
+  <script src="app.js?v=V1O" defer></script>
 </body>
 </html>

@@ -124,6 +124,19 @@
     }
     updatePwBadge(mode);
 
+    // 作業中（作業管理アプリ）にメモリ不足でアプリが落ちた場合、
+    // 開き直すとこのトップ画面から始まるため、作業中データがあれば作業画面へ自動で戻す。
+    // キー名・有効期限(3時間)は work/app.js と同じにすること。当面は片山のみ有効。
+    if (user.id === "katayama") {
+      try {
+        var ws = JSON.parse(localStorage.getItem("work:active_session") || "null");
+        if (ws && ws.url && !ws.suspended && ws.startTime && (Date.now() - ws.startTime) < 3 * 60 * 60 * 1000) {
+          window.location.replace(ws.url);
+          return;
+        }
+      } catch (e) {}
+    }
+
     var btn1 = document.getElementById("pwModalMode1");
     var btn2 = document.getElementById("pwModalMode2");
     if (btn1) btn1.textContent = getPwValueFor(user.id, "mode1") || "--";

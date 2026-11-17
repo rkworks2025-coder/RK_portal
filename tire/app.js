@@ -513,6 +513,16 @@
     // 担当者が未選択ならポータルの選択画面へ戻す（RK_portal統合対応）
     if (typeof requireUser === "function" && !requireUser("../select-user.html")) return;
     applyUrl(); showPrevPlaceholders(); fetchSheetData(); wire(); setupAutoAdvance(); setupCustomKeypad();
+    // ▼▼▼ 追加：誤フリップ検知（shared/nav-guard.js、当面は片山のみ有効） ▼▼▼
+    // 送信前に戻るフリップをした時は確認モーダルを出す。送信後のフリップ（正規ルート）は確認なし。
+    // 送信済みの画面に「進む」フリップで戻ってきた時も確認モーダルを出す。
+    const NAV = window.RKNavGuard || null;
+    if (NAV && NAV.enabled) {
+      NAV.shouldRearm = () => !!form && form.style.display !== 'none';
+      if (NAV.isDone()) NAV.confirmRevisitIfDone();
+      else NAV.armOnFirstTouch();
+    }
+    // ▲▲▲ 追加ここまで ▲▲▲
     // 前回データ取得(fetchSheetData)と回線を奪い合わないよう、先読みは少し遅らせて開始する
     setTimeout(preloadWorkSplash, 4000);
     setTimeout(prewarmPrevCache, 1500);
@@ -569,11 +579,18 @@
         form.style.display = 'none'; 
         resultCard.style.display = 'block'; 
         window.scrollTo({top:0});
-        
+
+        // ▼ 追加：送信したら誤フリップのガードを外す（送信後のフリップで巡回へ戻るのが正規ルート）
+        if (NAV && NAV.enabled) { NAV.markDone(); NAV.disarm(); }
+
         await postToSheet();
       });
     }
-    if(backBtn) backBtn.addEventListener('click', () => { resultCard.style.display = 'none'; form.style.display = 'block'; window.scrollTo({top:0}); if(resendBtn) resendBtn.style.display = 'none'; });
+    if(backBtn) backBtn.addEventListener('click', () => {
+      resultCard.style.display = 'none'; form.style.display = 'block'; window.scrollTo({top:0}); if(resendBtn) resendBtn.style.display = 'none';
+      // ▼ 追加：入力に戻った（再入力する）時は誤フリップのガードを戻す
+      if (NAV && NAV.enabled) { NAV.unmarkDone(); NAV.arm(); }
+    });
     if(resendBtn) resendBtn.addEventListener('click', () => { postToSheet(); });
     document.addEventListener('visibilitychange', handleVisibilityChange);
   }
