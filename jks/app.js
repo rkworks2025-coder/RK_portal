@@ -99,7 +99,7 @@ function triggerUpdate() {
       if (data.result === "OK") {
         showToast(`✅ ${areaLabel} 更新開始`);
         if (pollInterval) clearInterval(pollInterval);
-        pollInterval = setInterval(checkStatus, 30000); 
+        startRunWatch(); // ★変更: GitHub Actionsの実行完了で判定（旧: setInterval(checkStatus, 30000)） 
       } else {
         showToast(`⚠️ エラー: ${data.error || "不明"}`);
         resetUpdateBtn();
@@ -117,6 +117,68 @@ function triggerUpdate() {
   };
 
   sendPostRequest();
+}
+
+// ==========================================================
+// ★追加: 更新完了の判定をGitHub Actionsの実行状態で行う
+// 旧方式（GAS action=status の時刻）はスクレイパーの収集完了時点
+// （書き込み前）で完了扱いになり得るため、GitHubの公開APIで
+// Manual Patrol Check の実行が「completed」になるまで待つ。
+// GitHub APIが使えない時（回数制限等）は旧方式(checkStatus)で代替する。
+// ==========================================================
+const PATROL_RUNS_API = "https://api.github.com/repos/rkworks2025-coder/yoyaku/actions/workflows/manual_patrol.yml/runs";
+const RUN_NOT_FOUND_LIMIT_MS = 180000;  // 押下後3分経っても実行が見つからなければ失敗扱い
+const RUN_TOTAL_LIMIT_MS = 1200000;     // 押下後20分で打ち切り
+
+function startRunWatch() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(checkRunStatus, 30000);
+  setTimeout(checkRunStatus, 15000);
+}
+
+function checkRunStatus() {
+  if (!pollInterval) return;
+  const elapsed = Date.now() - updateClickTime;
+  if (elapsed > RUN_TOTAL_LIMIT_MS) {
+    showToast("⚠️ 更新の完了を確認できませんでした");
+    resetUpdateBtn();
+    return;
+  }
+  fetch(`${PATROL_RUNS_API}?per_page=10&event=workflow_dispatch`, { headers: { "Accept": "application/vnd.github+json" } })
+    .then(response => {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      return response.json();
+    })
+    .then(data => {
+      if (!pollInterval) return;
+      const windowStart = updateClickTime - 30000; // 端末時計のずれ吸収
+      const run = (data.workflow_runs || [])
+        .filter(r => Date.parse(r.created_at) >= windowStart)
+        .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))[0];
+
+      if (!run) {
+        if (elapsed > RUN_NOT_FOUND_LIMIT_MS) {
+          showToast("❌ 更新処理が起動していません");
+          resetUpdateBtn();
+        }
+        return;
+      }
+      const timeLabel = document.getElementById('last-update-time');
+      if (run.status !== "completed") {
+        timeLabel.textContent = "更新中...";
+        return;
+      }
+      if (run.conclusion === "success") {
+        finishUpdate(Date.parse(run.updated_at));
+      } else {
+        showToast(`❌ 更新失敗（${run.conclusion}）`);
+        resetUpdateBtn();
+      }
+    })
+    .catch(err => {
+      console.log("GitHub API確認失敗、旧方式で確認:", err);
+      checkStatus();
+    });
 }
 
 function checkStatus() {
@@ -159,6 +221,7 @@ function resetUpdateBtn() {
   btn.disabled = false;
   timeLabel.textContent = "";
   if (pollInterval) clearInterval(pollInterval);
+  pollInterval = null; // ★追加: 監視停止を明示
 }
 
 function showToast(msg) {
